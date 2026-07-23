@@ -27,6 +27,10 @@ New-Item -ItemType Directory -Force $stage | Out-Null
 try {
   Copy-Item (Join-Path $repo 'PalworldModManager.ps1') $stage -Force
   Copy-Item $manifestPath (Join-Path $stage 'mods.json') -Force
+  $brandingSource = Join-Path $repo 'branding'
+  if (Test-Path -LiteralPath $brandingSource) {
+    Copy-Item $brandingSource (Join-Path $stage 'branding') -Recurse -Force
+  }
 
   $missing = @()
   foreach ($mod in $manifest.mods) {

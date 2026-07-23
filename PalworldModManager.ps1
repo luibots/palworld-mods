@@ -184,69 +184,93 @@ $red    = [System.Drawing.Color]::FromArgb(190, 40, 40)
 
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'AyeGuild Mod Manager'
-$form.Size = New-Object System.Drawing.Size(760, 600)
+$form.Size = New-Object System.Drawing.Size(900, 720)
 $form.StartPosition = 'CenterScreen'
 $form.BackColor = $paper
-$form.MinimumSize = New-Object System.Drawing.Size(700, 520)
+$form.MinimumSize = New-Object System.Drawing.Size(820, 650)
 
 $header = New-Object System.Windows.Forms.Panel
-$header.Dock = 'Top'; $header.Height = 60; $header.BackColor = $ink
+$header.Dock = 'Top'; $header.Height = 154; $header.BackColor = $ink
+
+$brandImage = $null
+$brandPath = Join-Path $PSScriptRoot 'branding\AyeGuild.png'
+if (Test-Path -LiteralPath $brandPath) {
+  try {
+    $brandImage = [System.Drawing.Image]::FromFile($brandPath)
+    $brand = New-Object System.Windows.Forms.PictureBox
+    $brand.Location = New-Object System.Drawing.Point(12, 8)
+    $brand.Size = New-Object System.Drawing.Size(138, 138)
+    $brand.SizeMode = 'Zoom'
+    $brand.Image = $brandImage
+    $header.Controls.Add($brand)
+  } catch {}
+}
+
 $title = New-Object System.Windows.Forms.Label
 $title.Text = 'AYEGUILD MOD MANAGER'
 $title.ForeColor = $amber
-$title.Font = New-Object System.Drawing.Font('Segoe UI', 15, [System.Drawing.FontStyle]::Bold)
-$title.Location = New-Object System.Drawing.Point(16, 10)
+$title.Font = New-Object System.Drawing.Font('Segoe UI', 19, [System.Drawing.FontStyle]::Bold)
+$title.Location = New-Object System.Drawing.Point(164, 42)
 $title.AutoSize = $true
 $header.Controls.Add($title)
 
 $credit = New-Object System.Windows.Forms.Label
-$credit.Text = 'PALWORLD MOD COMMAND CENTER  |  Luibot x AyeGuild'
+$credit.Text = 'PALWORLD MOD COMMAND CENTER'
 $credit.ForeColor = [System.Drawing.Color]::FromArgb(150, 155, 165)
-$credit.Font = New-Object System.Drawing.Font('Segoe UI', 8)
-$credit.Location = New-Object System.Drawing.Point(18, 40)
+$credit.Font = New-Object System.Drawing.Font('Segoe UI', 9, [System.Drawing.FontStyle]::Bold)
+$credit.Location = New-Object System.Drawing.Point(166, 78)
 $credit.AutoSize = $true
 $header.Controls.Add($credit)
+
+$authors = New-Object System.Windows.Forms.Label
+$authors.Text = 'Built by Luibot x AyeGuild'
+$authors.ForeColor = [System.Drawing.Color]::FromArgb(210, 214, 222)
+$authors.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+$authors.Location = New-Object System.Drawing.Point(166, 104)
+$authors.AutoSize = $true
+$header.Controls.Add($authors)
 $form.Controls.Add($header)
 
 $pathLabel = New-Object System.Windows.Forms.Label
-$pathLabel.Location = New-Object System.Drawing.Point(16, 74)
-$pathLabel.Size = New-Object System.Drawing.Size(600, 34)
+$pathLabel.Location = New-Object System.Drawing.Point(16, 168)
+$pathLabel.Size = New-Object System.Drawing.Size(720, 34)
 $pathLabel.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 $form.Controls.Add($pathLabel)
 
 $browse = New-Object System.Windows.Forms.Button
 $browse.Text = 'Find it myself...'
-$browse.Location = New-Object System.Drawing.Point(620, 74)
+$browse.Location = New-Object System.Drawing.Point(752, 168)
 $browse.Size = New-Object System.Drawing.Size(110, 26)
+$browse.Anchor = 'Top,Right'
 $form.Controls.Add($browse)
 
 $catalogLabel = New-Object System.Windows.Forms.Label
 $catalogLabel.Text = 'AYEGUILD APPROVED MODS'
-$catalogLabel.Location = New-Object System.Drawing.Point(16, 106)
+$catalogLabel.Location = New-Object System.Drawing.Point(16, 200)
 $catalogLabel.AutoSize = $true
 $catalogLabel.ForeColor = $ink
 $catalogLabel.Font = New-Object System.Drawing.Font('Segoe UI', 8, [System.Drawing.FontStyle]::Bold)
 $form.Controls.Add($catalogLabel)
 
 $list = New-Object System.Windows.Forms.ListView
-$list.Location = New-Object System.Drawing.Point(16, 128)
-$list.Size = New-Object System.Drawing.Size(714, 288)
+$list.Location = New-Object System.Drawing.Point(16, 222)
+$list.Size = New-Object System.Drawing.Size(846, 310)
 $list.View = 'Details'
 $list.CheckBoxes = $true
 $list.FullRowSelect = $true
 $list.GridLines = $false
 $list.Font = New-Object System.Drawing.Font('Segoe UI', 9)
-[void]$list.Columns.Add('AyeGuild Mod', 170)
+[void]$list.Columns.Add('AyeGuild Mod', 190)
 [void]$list.Columns.Add('Version', 70)
 [void]$list.Columns.Add('Install', 100)
 [void]$list.Columns.Add('Status', 100)
-[void]$list.Columns.Add('What it does', 260)
+[void]$list.Columns.Add('What it does', 370)
 $list.Anchor = 'Top,Left,Right,Bottom'
 $form.Controls.Add($list)
 
 $apply = New-Object System.Windows.Forms.Button
 $apply.Text = 'Apply Changes'
-$apply.Location = New-Object System.Drawing.Point(16, 428)
+$apply.Location = New-Object System.Drawing.Point(16, 544)
 $apply.Size = New-Object System.Drawing.Size(140, 34)
 $apply.BackColor = $amber
 $apply.ForeColor = [System.Drawing.Color]::White
@@ -257,21 +281,21 @@ $form.Controls.Add($apply)
 
 $refresh = New-Object System.Windows.Forms.Button
 $refresh.Text = 'Refresh'
-$refresh.Location = New-Object System.Drawing.Point(166, 428)
+$refresh.Location = New-Object System.Drawing.Point(166, 544)
 $refresh.Size = New-Object System.Drawing.Size(90, 34)
 $refresh.Anchor = 'Left,Bottom'
 $form.Controls.Add($refresh)
 
 $openDir = New-Object System.Windows.Forms.Button
 $openDir.Text = 'Open Mods Folder'
-$openDir.Location = New-Object System.Drawing.Point(266, 428)
+$openDir.Location = New-Object System.Drawing.Point(266, 544)
 $openDir.Size = New-Object System.Drawing.Size(140, 34)
 $openDir.Anchor = 'Left,Bottom'
 $form.Controls.Add($openDir)
 
 $status = New-Object System.Windows.Forms.TextBox
-$status.Location = New-Object System.Drawing.Point(16, 472)
-$status.Size = New-Object System.Drawing.Size(714, 78)
+$status.Location = New-Object System.Drawing.Point(16, 588)
+$status.Size = New-Object System.Drawing.Size(846, 84)
 $status.Multiline = $true
 $status.ReadOnly = $true
 $status.ScrollBars = 'Vertical'
@@ -395,3 +419,4 @@ $browse.Add_Click({
 Say 'Looking for your Palworld installation...'
 Refresh-Everything
 [void]$form.ShowDialog()
+if ($brandImage) { $brandImage.Dispose() }
