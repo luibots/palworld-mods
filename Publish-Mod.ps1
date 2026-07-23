@@ -22,6 +22,8 @@ param(
   [Parameter(ParameterSetName = 'Add')][string]$Notes,
   [Parameter(ParameterSetName = 'Add')][string]$Version = '1.0.0',
   [Parameter(ParameterSetName = 'Add')][string]$GameVersion = 'v1.0.1.100619',
+  [Parameter(ParameterSetName = 'Add')][ValidateSet('server-rule','client-tweak','quality-of-life','content')][string]$Category = 'server-rule',
+  [Parameter(ParameterSetName = 'Add')][string[]]$Tags = @(),
   [Parameter(ParameterSetName = 'Add')][switch]$ServerSide,
   [Parameter(ParameterSetName = 'Add')][switch]$Recommended,
   [Parameter(ParameterSetName = 'Remove', Mandatory)][string]$Remove,
@@ -59,10 +61,10 @@ if ($Remove) {
   if ($leaf -notlike '*.pak') { throw "That does not look like a .pak file: $leaf" }
   if (-not $Id) { $Id = ($leaf -replace '^zzz_', '' -replace '_P\.pak$', '' -replace '\.pak$', '').ToLower() }
 
-  $modsDir = Join-Path $repo 'mods'
-  New-Item -ItemType Directory -Force $modsDir | Out-Null
-  $dest = Join-Path $modsDir $leaf
-  # Re-publishing a pak that already lives in mods/ would be a copy onto itself.
+  # Folder-per-mod layout: mods/<id>/<pak>, with mods/<id>/src/ for the build recipe.
+  $modDir = Join-Path $repo "mods\$Id"
+  New-Item -ItemType Directory -Force (Join-Path $modDir 'src') | Out-Null
+  $dest = Join-Path $modDir $leaf
   if ((Resolve-Path $PakPath).Path -ne $dest) {
     Copy-Item $PakPath $dest -Force
   }
@@ -73,15 +75,18 @@ if ($Remove) {
     id          = $Id
     name        = $Name
     description = $Description
-    file        = "mods/$leaf"
+    file        = "mods/$Id/$leaf"
     size        = $size
     sha256      = $sha
     version     = $Version
+    category    = $Category
+    tags        = @($Tags)
     gameVersion = $GameVersion
     verified    = (Get-Date -Format 'yyyy-MM-dd')
     enabled     = $true
     serverSide  = [bool]$ServerSide
     recommended = [bool]$Recommended
+    conflicts   = @()
   }
   if ($Notes) { $entry['notes'] = $Notes }
   elseif ($ServerSide) {

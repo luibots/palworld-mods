@@ -1,0 +1,20 @@
+{
+  "id": "basefix10",
+  "name": "10 Bases Per Guild",
+  "description": "Raises the base-camp limit to 10 at every base level. Worker limits are left completely vanilla.",
+  "version": "1.0.0",
+  "category": "server-rule",
+  "tags": ["base", "building", "guild"],
+  "author": "Luibot",
+  "team": "AyeGuild",
+  "serverSide": true,
+  "recommended": true,
+  "enabled": true,
+  "gameVersion": "v1.0.1.100619",
+  "gameVersionMin": "v1.0.0",
+  "verified": "2026-07-23",
+  "conflicts": [],
+  "pak": "zzz_luibasefix_P.pak",
+  "sha256": "a837b914477fbd438222f4bab34f8ef53ba7b39ba6f92a32d2345b6196c83111",
+  "notes": "The server must be running this same mod for it to take effect. If your Palbox still shows the old cap, the server has not been updated yet - ask the admin."
+}
