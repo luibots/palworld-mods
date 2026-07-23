@@ -59,9 +59,11 @@ if ($Remove) {
 
   $modsDir = Join-Path $repo 'mods'
   New-Item -ItemType Directory -Force $modsDir | Out-Null
-  Copy-Item $PakPath (Join-Path $modsDir $leaf) -Force
-
   $dest = Join-Path $modsDir $leaf
+  # Re-publishing a pak that already lives in mods/ would be a copy onto itself.
+  if ((Resolve-Path $PakPath).Path -ne $dest) {
+    Copy-Item $PakPath $dest -Force
+  }
   $sha  = (Get-FileHash $dest -Algorithm SHA256).Hash.ToLower()
   $size = (Get-Item $dest).Length
 
