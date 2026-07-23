@@ -112,6 +112,7 @@ $json = $manifest | ConvertTo-Json -Depth 8
 # Rebuild the self-contained installer every time the supported set changes.
 $bundleBuilder = Join-Path $repo 'New-GuildBundle.ps1'
 $bundlePath = Join-Path $repo 'GuildMods.zip'
+$managerLauncher = Join-Path $repo 'Palworld Mod Manager.bat'
 if (Test-Path $bundleBuilder) {
   & $bundleBuilder -OutPath $bundlePath | Out-Null
   if (-not (Test-Path $bundlePath)) {
@@ -147,9 +148,10 @@ Built and maintained by Luibot and AyeGuild.
 "@
         & gh release view $tag --repo 'luibots/palworld-mods' *> $null
         if ($LASTEXITCODE -eq 0) {
-          & gh release upload $tag "$dest" "$bundlePath" --repo 'luibots/palworld-mods' --clobber
+          & gh release upload $tag "$dest" "$bundlePath" "$managerLauncher" `
+            --repo 'luibots/palworld-mods' --clobber
         } else {
-          & gh release create $tag "$dest" "$bundlePath" `
+          & gh release create $tag "$dest" "$bundlePath" "$managerLauncher" `
             --repo 'luibots/palworld-mods' `
             --title $releaseTitle `
             --notes $releaseNotes
