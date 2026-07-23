@@ -20,6 +20,8 @@ param(
   [Parameter(ParameterSetName = 'Add', Mandatory)][string]$Description,
   [Parameter(ParameterSetName = 'Add')][string]$Id,
   [Parameter(ParameterSetName = 'Add')][string]$Notes,
+  [Parameter(ParameterSetName = 'Add')][string]$Version = '1.0.0',
+  [Parameter(ParameterSetName = 'Add')][string]$GameVersion = 'v1.0.1.100619',
   [Parameter(ParameterSetName = 'Add')][switch]$ServerSide,
   [Parameter(ParameterSetName = 'Add')][switch]$Recommended,
   [Parameter(ParameterSetName = 'Remove', Mandatory)][string]$Remove,
@@ -74,6 +76,10 @@ if ($Remove) {
     file        = "mods/$leaf"
     size        = $size
     sha256      = $sha
+    version     = $Version
+    gameVersion = $GameVersion
+    verified    = (Get-Date -Format 'yyyy-MM-dd')
+    enabled     = $true
     serverSide  = [bool]$ServerSide
     recommended = [bool]$Recommended
   }
