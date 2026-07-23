@@ -8,8 +8,7 @@ Mods for our Palworld server, plus a one-click manager that installs them for yo
 
 ## How to install the mods
 
-1. **Download the manager:** [Palworld Mod Manager.bat](https://raw.githubusercontent.com/luibots/palworld-mods/master/Palworld%20Mod%20Manager.bat)
-   (right-click the link, "Save link as...")
+1. **[Click here to download the Mod Manager](https://github.com/luibots/palworld-mods/releases/latest/download/Palworld.Mod.Manager.bat)**
 2. **Double-click the file you just downloaded.**
 
 A window opens, finds your Palworld automatically, and shows the mod list.
@@ -48,8 +47,30 @@ Open the manager again, **untick** the mod, press **Apply Changes**.
 
 ## For the admin
 
-Mods are published here and the manager reads [`mods.json`](mods.json) to know what is available.
-To publish a new mod: drop the `.pak` in `mods/`, add an entry to `mods.json` (with its `sha256`), and push.
-Everyone's manager picks it up on next launch - no need to re-send files.
+Mods live here; the manager reads [`mods.json`](mods.json) to know what is available.
+
+**Publishing a new mod is one command** - it hashes the pak, updates the manifest, commits and pushes:
+
+```powershell
+.\Publish-Mod.ps1 -PakPath "C:\built\zzz_xprate_P.pak" `
+                  -Name "2x XP" -Description "Doubles XP gain." `
+                  -ServerSide -Recommended
+```
+
+```powershell
+.\Publish-Mod.ps1 -List              # see what's published
+.\Publish-Mod.ps1 -Remove xprate     # unpublish
+```
+
+Everyone's Mod Manager picks up the change the next time they open it - no re-sending files,
+and the Discord bot announces new mods automatically.
+
+Note: the download link above points at the **Release** asset, not the raw file. A raw `.bat`
+link opens as text in the browser instead of downloading, which confuses non-technical users.
+After changing the manager itself, refresh the release asset:
+
+```powershell
+gh release upload v1.0 "Palworld Mod Manager.bat" --repo luibots/palworld-mods --clobber
+```
 
 Built with [PAL-COMMAND](https://github.com/luibots/pal-command).
