@@ -1,9 +1,9 @@
 <#
   Publish-Mod.ps1 - add (or remove) a mod from the guild mod set, in one command.
 
-  Handles the whole chore: copies the .pak in, hashes it, updates mods.json,
-  commits and pushes. Everyone's Mod Manager picks it up on next launch - you never
-  have to send files on Discord again.
+  Handles the whole release: copies the .pak in, hashes it, updates mods.json,
+  rebuilds GuildMods.zip, commits, pushes, and creates a versioned GitHub release.
+  The PAL COMMAND Discord bot detects the manifest change and posts the update.
 
   Examples:
     .\Publish-Mod.ps1 -PakPath "C:\built\zzz_xprate_P.pak" -Name "2x XP" `
@@ -24,6 +24,7 @@ param(
   [Parameter(ParameterSetName = 'Add')][string]$GameVersion = 'v1.0.1.100619',
   [Parameter(ParameterSetName = 'Add')][ValidateSet('server-rule','client-tweak','quality-of-life','content')][string]$Category = 'server-rule',
   [Parameter(ParameterSetName = 'Add')][string[]]$Tags = @(),
+  [Parameter(ParameterSetName = 'Add')][string[]]$Conflicts = @(),
   [Parameter(ParameterSetName = 'Add')][switch]$ServerSide,
   [Parameter(ParameterSetName = 'Add')][switch]$Recommended,
   [Parameter(ParameterSetName = 'Remove', Mandatory)][string]$Remove,
@@ -84,9 +85,11 @@ if ($Remove) {
     gameVersion = $GameVersion
     verified    = (Get-Date -Format 'yyyy-MM-dd')
     enabled     = $true
+    author      = 'Luibot'
+    team        = 'AyeGuild'
     serverSide  = [bool]$ServerSide
     recommended = [bool]$Recommended
-    conflicts   = @()
+    conflicts   = @($Conflicts)
   }
   if ($Notes) { $entry['notes'] = $Notes }
   elseif ($ServerSide) {
@@ -106,6 +109,16 @@ $manifest.updated = (Get-Date -Format 'yyyy-MM-dd')
 $json = $manifest | ConvertTo-Json -Depth 8
 [System.IO.File]::WriteAllText($manifestPath, $json, (New-Object System.Text.UTF8Encoding $false))
 
+# Rebuild the self-contained installer every time the supported set changes.
+$bundleBuilder = Join-Path $repo 'New-GuildBundle.ps1'
+$bundlePath = Join-Path $repo 'GuildMods.zip'
+if (Test-Path $bundleBuilder) {
+  & $bundleBuilder -OutPath $bundlePath | Out-Null
+  if (-not (Test-Path $bundlePath)) {
+    throw 'Guild bundle rebuild failed; nothing was published.'
+  }
+}
+
 Push-Location $repo
 try {
   $ErrorActionPreference = 'Continue'
@@ -116,7 +129,38 @@ try {
     & git push -q origin master 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) {
       Write-Host ''
-      Write-Host 'Pushed. Your guild will see it the next time they open the Mod Manager.'
+      Write-Host 'Pushed manifest and mod files.'
+
+      if (-not $Remove) {
+        $tag = "$Id-v$Version"
+        $releaseTitle = "$Name v$Version"
+        $releaseNotes = @"
+$Description
+
+- Compatibility: $GameVersion
+- Scope: $(if ($ServerSide) { 'Server + client' } else { 'Client only' })
+- SHA-256: $sha
+
+$Notes
+
+Built and maintained by Luibot and AyeGuild.
+"@
+        & gh release view $tag --repo 'luibots/palworld-mods' *> $null
+        if ($LASTEXITCODE -eq 0) {
+          & gh release upload $tag "$dest" "$bundlePath" --repo 'luibots/palworld-mods' --clobber
+        } else {
+          & gh release create $tag "$dest" "$bundlePath" `
+            --repo 'luibots/palworld-mods' `
+            --title $releaseTitle `
+            --notes $releaseNotes
+        }
+        if ($LASTEXITCODE -ne 0) {
+          Write-Warning "GitHub release '$tag' failed. The commit is safe, but release assets need attention."
+        } else {
+          Write-Host "Released: https://github.com/luibots/palworld-mods/releases/tag/$tag"
+          Write-Host 'Discord will announce the manifest change on its next poll.'
+        }
+      }
     } else {
       Write-Host 'Committed, but the push failed - run: git push origin master'
     }

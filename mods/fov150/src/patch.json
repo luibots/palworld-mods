@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "asset": "Pal/Content/Pal/Blueprint/System/BP_PalOptionSubsystem",
+  "property": "OptionLocalStaticSettings.FOV.Max",
+  "operation": "setScalar",
+  "from": 90.0,
+  "to": 150.0,
+  "gameVersion": "v1.0.1.100619",
+  "engineVersion": "VER_UE5_1",
+  "pakVersion": "V11",
+  "pathHashSeed": "7BA0BED3",
+  "verified": "2026-07-23",
+  "authors": [
+    "Luibot",
+    "AyeGuild"
+  ]
+}
+

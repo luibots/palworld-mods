@@ -29,6 +29,30 @@
                      "conflicts":  [
 
                                    ]
+                 },
+                 {
+                     "id":  "fov150",
+                     "name":  "FOV Slider: Up To 150",
+                     "description":  "Expands the in-game FOV slider maximum from 90 to 150. Each player chooses their own value.",
+                     "file":  "mods/fov150/zzz_ayeguild_fov150_P.pak",
+                     "size":  9091,
+                     "sha256":  "9d261e41dab05fd60fa90b4d70505450b55acb7e0d354c2d0a111b5ed8c9ce8c",
+                     "version":  "1.0.0",
+                     "category":  "client-tweak",
+                     "tags":  [
+                                  "camera,fov,accessibility"
+                              ],
+                     "gameVersion":  "v1.0.1.100619",
+                     "verified":  "2026-07-23",
+                     "enabled":  true,
+                     "author":  "Luibot",
+                     "team":  "AyeGuild",
+                     "serverSide":  false,
+                     "recommended":  true,
+                     "conflicts":  [
+                                       "world-settings-unlocker"
+                                   ],
+                     "notes":  "Client only. No server install or restart required. Choose your own value in Palworld camera settings."
                  }
              ],
     "manifestVersion":  "1.1.0",

@@ -183,7 +183,7 @@ $green  = [System.Drawing.Color]::FromArgb(22, 128, 60)
 $red    = [System.Drawing.Color]::FromArgb(190, 40, 40)
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'Palworld Mod Manager'
+$form.Text = 'AyeGuild Mod Manager'
 $form.Size = New-Object System.Drawing.Size(760, 600)
 $form.StartPosition = 'CenterScreen'
 $form.BackColor = $paper
@@ -192,7 +192,7 @@ $form.MinimumSize = New-Object System.Drawing.Size(700, 520)
 $header = New-Object System.Windows.Forms.Panel
 $header.Dock = 'Top'; $header.Height = 60; $header.BackColor = $ink
 $title = New-Object System.Windows.Forms.Label
-$title.Text = 'PALWORLD MOD MANAGER'
+$title.Text = 'AYEGUILD MOD MANAGER'
 $title.ForeColor = $amber
 $title.Font = New-Object System.Drawing.Font('Segoe UI', 15, [System.Drawing.FontStyle]::Bold)
 $title.Location = New-Object System.Drawing.Point(16, 10)
@@ -200,7 +200,7 @@ $title.AutoSize = $true
 $header.Controls.Add($title)
 
 $credit = New-Object System.Windows.Forms.Label
-$credit.Text = 'by Luibot & AyeGuild'
+$credit.Text = 'PALWORLD MOD COMMAND CENTER  |  Luibot x AyeGuild'
 $credit.ForeColor = [System.Drawing.Color]::FromArgb(150, 155, 165)
 $credit.Font = New-Object System.Drawing.Font('Segoe UI', 8)
 $credit.Location = New-Object System.Drawing.Point(18, 40)
@@ -220,17 +220,27 @@ $browse.Location = New-Object System.Drawing.Point(620, 74)
 $browse.Size = New-Object System.Drawing.Size(110, 26)
 $form.Controls.Add($browse)
 
+$catalogLabel = New-Object System.Windows.Forms.Label
+$catalogLabel.Text = 'AYEGUILD APPROVED MODS'
+$catalogLabel.Location = New-Object System.Drawing.Point(16, 106)
+$catalogLabel.AutoSize = $true
+$catalogLabel.ForeColor = $ink
+$catalogLabel.Font = New-Object System.Drawing.Font('Segoe UI', 8, [System.Drawing.FontStyle]::Bold)
+$form.Controls.Add($catalogLabel)
+
 $list = New-Object System.Windows.Forms.ListView
-$list.Location = New-Object System.Drawing.Point(16, 116)
-$list.Size = New-Object System.Drawing.Size(714, 300)
+$list.Location = New-Object System.Drawing.Point(16, 128)
+$list.Size = New-Object System.Drawing.Size(714, 288)
 $list.View = 'Details'
 $list.CheckBoxes = $true
 $list.FullRowSelect = $true
 $list.GridLines = $false
 $list.Font = New-Object System.Drawing.Font('Segoe UI', 9)
-[void]$list.Columns.Add('Mod', 190)
+[void]$list.Columns.Add('AyeGuild Mod', 170)
+[void]$list.Columns.Add('Version', 70)
+[void]$list.Columns.Add('Install', 100)
 [void]$list.Columns.Add('Status', 100)
-[void]$list.Columns.Add('What it does', 400)
+[void]$list.Columns.Add('What it does', 260)
 $list.Anchor = 'Top,Left,Right,Bottom'
 $form.Controls.Add($list)
 
@@ -312,6 +322,8 @@ function Refresh-Everything {
   foreach ($m in $script:mods) {
     $installed = $script:pal -and (Test-ModInstalled $script:pal $m)
     $it = New-Object System.Windows.Forms.ListViewItem($m.name)
+    [void]$it.SubItems.Add($(if ($m.version) { "v$($m.version)" } else { '-' }))
+    [void]$it.SubItems.Add($(if ($m.serverSide) { 'Server + client' } else { 'Client only' }))
     [void]$it.SubItems.Add($(if ($installed) { 'Installed' } else { 'Not installed' }))
     [void]$it.SubItems.Add([string]$m.description)
     $it.Checked = [bool]$installed
