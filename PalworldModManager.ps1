@@ -32,7 +32,10 @@ function Get-Manifest {
   foreach ($u in $urls) {
     try {
       $r = Invoke-WebRequest -Uri $u.M -UseBasicParsing -TimeoutSec 20
-      return @{ Manifest = ($r.Content | ConvertFrom-Json); Base = $u.B }
+      # Strip a UTF-8 BOM if one slipped into the manifest - ConvertFrom-Json chokes on it
+      # with "Invalid JSON primitive", which would break the manager for every user.
+      $text = ($r.Content -replace "^\xEF\xBB\xBF", '').TrimStart([char]0xFEFF, [char]0x200B)
+      return @{ Manifest = ($text | ConvertFrom-Json); Base = $u.B }
     } catch { $errs += ("{0} -> {1}" -f $u.M, $_.Exception.Message) }
   }
   throw ("Could not download the mod list. Check your internet connection. Details: " + ($errs -join ' | '))

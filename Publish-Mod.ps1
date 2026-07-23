@@ -89,7 +89,11 @@ if ($Remove) {
 
 $manifest.mods = $mods
 $manifest.updated = (Get-Date -Format 'yyyy-MM-dd')
-($manifest | ConvertTo-Json -Depth 8) | Out-File $manifestPath -Encoding utf8
+# Write UTF-8 WITHOUT a BOM. PowerShell 5.1's `Out-File -Encoding utf8` prepends one,
+# and a leading BOM makes ConvertFrom-Json fail with "Invalid JSON primitive" for every
+# client reading the manifest - i.e. it silently breaks the Mod Manager for everyone.
+$json = $manifest | ConvertTo-Json -Depth 8
+[System.IO.File]::WriteAllText($manifestPath, $json, (New-Object System.Text.UTF8Encoding $false))
 
 Push-Location $repo
 try {
