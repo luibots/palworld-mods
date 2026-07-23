@@ -25,6 +25,17 @@ $Branches  = @('master','main')
 
 function Get-Manifest {
   $errs = @()
+  # LOCAL BUNDLE MODE: if a mods.json sits next to this script (i.e. we were unzipped from a
+  # Discord bundle), install from the bundled paks instead of downloading from GitHub. This is
+  # what lets distribution stay fully private - no public repo needed.
+  $localManifest = Join-Path $PSScriptRoot 'mods.json'
+  if (Test-Path -LiteralPath $localManifest) {
+    try {
+      $text = (Get-Content $localManifest -Raw) -replace "^\xEF\xBB\xBF", ''
+      $text = $text.TrimStart([char]0xFEFF, [char]0x200B)
+      return @{ Manifest = ($text | ConvertFrom-Json); Base = $PSScriptRoot; Local = $true }
+    } catch { $errs += ("local mods.json -> {0}" -f $_.Exception.Message) }
+  }
   $urls = if ($ManifestUrl) { @(@{ M = $ManifestUrl; B = (Split-Path $ManifestUrl -Parent) }) }
           else { $Branches | ForEach-Object {
             @{ M = "https://raw.githubusercontent.com/$RepoOwner/$RepoName/$_/mods.json"
@@ -93,7 +104,13 @@ function Install-Mod([string]$pal, [string]$base, $mod) {
   if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
   $dest = Join-Path $dir (Get-ModFileName $mod)
   $tmp  = "$dest.part"
-  Invoke-WebRequest -Uri ("{0}/{1}" -f $base, $mod.file) -OutFile $tmp -UseBasicParsing -TimeoutSec 120
+  # Local bundle base = copy from the bundled pak; URL base = download.
+  $localPak = Join-Path $base ($mod.file -replace '/', '\')
+  if (Test-Path -LiteralPath $localPak) {
+    Copy-Item -LiteralPath $localPak -Destination $tmp -Force
+  } else {
+    Invoke-WebRequest -Uri ("{0}/{1}" -f $base, $mod.file) -OutFile $tmp -UseBasicParsing -TimeoutSec 120
+  }
   if ($mod.sha256) {
     $h = (Get-FileHash -LiteralPath $tmp -Algorithm SHA256).Hash.ToLower()
     if ($h -ne ([string]$mod.sha256).ToLower()) {
