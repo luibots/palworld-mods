@@ -50,17 +50,102 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PalworldModManager.ps1
   # write ASCII, CRLF
   [System.IO.File]::WriteAllText((Join-Path $stage 'Install Mods.bat'), ($bat -replace "`r?`n","`r`n"), (New-Object System.Text.ASCIIEncoding))
 
-  $readme = @"
-PALWORLD GUILD MODS - by Luibot & AyeGuild
+  $readme = @'
+# AyeGuild Palworld Mods
 
-1. Unzip this whole folder somewhere (Desktop is fine).
-2. Double-click "Install Mods.bat".
-3. Tick the mods you want, press Apply Changes. Done.
+```text
+     _                ____       _ _     _
+    / \   _   _  ___ / ___|_   _(_) | __| |
+   / _ \ | | | |/ _ \ |  _| | | | | |/ _` |
+  / ___ \| |_| |  __/ |_| | |_| | | | (_| |
+ /_/   \_\\__, |\___|\____|\__,_|_|_|\__,_|
+          |___/
 
-Close Palworld first. Steam version only (Game Pass can't load mods).
-Server-side mods only take effect once the server is running them too.
-"@
-  [System.IO.File]::WriteAllText((Join-Path $stage 'READ ME FIRST.txt'), ($readme -replace "`r?`n","`r`n"), (New-Object System.Text.ASCIIEncoding))
+          PALWORLD MOD COMMAND CENTER
+              Luibot x AyeGuild
+```
+
+Welcome to the guild mod pack. You do not need to edit files, use PowerShell,
+or understand how Palworld mods work. The manager handles it.
+
+## Install In 60 Seconds
+
+1. **Extract this entire ZIP** to a normal folder. Your Desktop is fine.
+2. **Close Palworld completely.**
+3. Double-click **`Install Mods.bat`**.
+4. Tick the mods you want.
+5. Select **Apply Changes**.
+6. Start Palworld and join the guild server.
+
+Do not run the installer from inside the ZIP preview. Extract it first.
+
+## Updating
+
+When the guild posts a newer bundle:
+
+1. Close Palworld.
+2. Extract the new ZIP.
+3. Run **`Install Mods.bat`** from the new folder.
+4. Select **Apply Changes**.
+
+The manager replaces older versions for you.
+
+## Removing Or Disabling A Mod
+
+1. Close Palworld.
+2. Run **`Install Mods.bat`**.
+3. Untick the mod.
+4. Select **Apply Changes**.
+
+The manager removes only the selected guild mod. It does not delete saves.
+
+## What The Labels Mean
+
+- **Client only:** Install it on your own computer. The server does not need it.
+- **Server required:** The server and participating players may need matching files.
+- **Recommended:** This is part of the guild's normal setup.
+
+## Important
+
+- This bundle supports the **Steam version of Palworld**.
+- Always close Palworld before applying changes.
+- Never rename, unpack, or edit a `.pak` file.
+- Your character and world progress are stored separately from these mod files.
+- If the game updates, wait for the guild's compatibility notice before reinstalling.
+
+## Troubleshooting
+
+**Windows protected your PC**
+
+Select **More info**, then **Run anyway**. The launcher is a guild-made script,
+so it is not signed by a commercial software publisher.
+
+**Palworld was not found**
+
+Use the manager's browse option and select your Palworld installation folder.
+That folder should contain a directory named `Pal`.
+
+**The mod appears installed but does nothing**
+
+Restart Palworld. For a server-required mod, the server must also be running
+the compatible version.
+
+**The game will not start after an update**
+
+Open the manager, untick the mods, and apply changes. Send the admin a screenshot
+of the manager and the error. Your saves are not removed.
+
+## Credits
+
+Designed, tested, and maintained by **Luibot** and **AyeGuild**.
+
+Built for the guild. Tested before deployment. Backed up before server changes.
+'@
+  [System.IO.File]::WriteAllText(
+    (Join-Path $stage 'README.md'),
+    ($readme -replace "`r?`n","`r`n"),
+    (New-Object System.Text.UTF8Encoding($false))
+  )
 
   if (Test-Path $OutPath) { Remove-Item $OutPath -Force }
   Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $OutPath -Force
