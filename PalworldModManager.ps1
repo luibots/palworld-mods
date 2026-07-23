@@ -178,9 +178,17 @@ $title = New-Object System.Windows.Forms.Label
 $title.Text = 'PALWORLD MOD MANAGER'
 $title.ForeColor = $amber
 $title.Font = New-Object System.Drawing.Font('Segoe UI', 15, [System.Drawing.FontStyle]::Bold)
-$title.Location = New-Object System.Drawing.Point(16, 14)
+$title.Location = New-Object System.Drawing.Point(16, 10)
 $title.AutoSize = $true
 $header.Controls.Add($title)
+
+$credit = New-Object System.Windows.Forms.Label
+$credit.Text = 'by Luibot & AyeGuild'
+$credit.ForeColor = [System.Drawing.Color]::FromArgb(150, 155, 165)
+$credit.Font = New-Object System.Drawing.Font('Segoe UI', 8)
+$credit.Location = New-Object System.Drawing.Point(18, 40)
+$credit.AutoSize = $true
+$header.Controls.Add($credit)
 $form.Controls.Add($header)
 
 $pathLabel = New-Object System.Windows.Forms.Label

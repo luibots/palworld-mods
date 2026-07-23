@@ -17,8 +17,15 @@
                      "gameVersion":  "v1.0.1.100619",
                      "gameVersionMin":  "v1.0.0",
                      "verified":  "2026-07-23",
-                     "enabled":  true
+                     "enabled":  true,
+                     "author":  "Luibot",
+                     "team":  "AyeGuild"
                  }
              ],
-    "manifestVersion":  "1.1.0"
+    "manifestVersion":  "1.1.0",
+    "authors":  [
+                    "Luibot",
+                    "AyeGuild"
+                ],
+    "repository":  "https://github.com/luibots/palworld-mods"
 }

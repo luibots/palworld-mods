@@ -1,6 +1,6 @@
 # Palworld Guild Mods
 
-Mods for our Palworld server, plus a one-click manager that installs them for you.
+**By Luibot & AyeGuild** · Mods for our Palworld server, plus a one-click manager that installs them for you.
 
 **You do not need to know anything technical. Just follow the two steps below.**
 
@@ -73,4 +73,7 @@ After changing the manager itself, refresh the release asset:
 gh release upload v1.0 "Palworld Mod Manager.bat" --repo luibots/palworld-mods --clobber
 ```
 
-Built with [PAL-COMMAND](https://github.com/luibots/pal-command).
+## Credits
+
+Made by **Luibot** and the **AyeGuild** crew.
+Built and managed with [PAL·COMMAND](https://github.com/luibots/pal-command).
