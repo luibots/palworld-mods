@@ -127,16 +127,39 @@ function Uninstall-Mod([string]$pal, $mod) {
 }
 
 function Get-UE4SSRoot([string]$pal) {
-  Join-Path $pal 'Mods\NativeMods\UE4SS'
+  $candidates = New-Object System.Collections.Generic.List[string]
+
+  # Older/manual layouts copy UE4SS under the game directory.
+  $candidates.Add((Join-Path $pal 'Mods\NativeMods\UE4SS'))
+
+  # Steam keeps Workshop native mods beside the library's common folder. The official
+  # UE4SS Experimental item runs from here and is not copied into the game directory.
+  $common = Split-Path $pal -Parent
+  $steamApps = Split-Path $common -Parent
+  if ((Split-Path $common -Leaf) -eq 'common' -and (Split-Path $steamApps -Leaf) -eq 'steamapps') {
+    $candidates.Add((Join-Path $steamApps 'workshop\content\1623730\3625223587'))
+  }
+
+  foreach ($candidate in $candidates) {
+    if ((Test-Path -LiteralPath (Join-Path $candidate 'UE4SS.dll')) -and
+        (Test-Path -LiteralPath (Join-Path $candidate 'Mods'))) {
+      return $candidate
+    }
+  }
+  return $null
 }
 
 function Get-BetaDestination([string]$pal, $beta) {
-  Join-Path (Get-UE4SSRoot $pal) ("Mods\{0}" -f $beta.modFolder)
+  $ue4ss = Get-UE4SSRoot $pal
+  if (-not $ue4ss) { return $null }
+  Join-Path $ue4ss ("Mods\{0}" -f $beta.modFolder)
 }
 
 function Test-BetaInstalled([string]$pal, $beta) {
   if ($beta.installType -ne 'ue4ss-lua') { return $false }
-  Test-Path -LiteralPath (Join-Path (Get-BetaDestination $pal $beta) 'scripts\main.lua')
+  $destination = Get-BetaDestination $pal $beta
+  if (-not $destination) { return $false }
+  Test-Path -LiteralPath (Join-Path $destination 'scripts\main.lua')
 }
 
 function Install-Beta([string]$pal, $beta) {
@@ -144,7 +167,7 @@ function Install-Beta([string]$pal, $beta) {
     throw "Unsupported beta installer type: $($beta.installType)"
   }
   $ue4ss = Get-UE4SSRoot $pal
-  if (-not (Test-Path -LiteralPath $ue4ss)) {
+  if (-not $ue4ss) {
     throw @"
 UE4SS Experimental is required for this beta.
 Subscribe in Steam Workshop, enable it in Palworld's Mod Manager, launch once,
@@ -190,6 +213,7 @@ close Palworld, and then run this installer again.
 
 function Uninstall-Beta([string]$pal, $beta) {
   $ue4ss = Get-UE4SSRoot $pal
+  if (-not $ue4ss) { return }
   $destination = Get-BetaDestination $pal $beta
   if (Test-Path -LiteralPath $destination) {
     Remove-Item -LiteralPath $destination -Recurse -Force
@@ -212,6 +236,11 @@ if ($SelfTest) {
   $pal = Find-Palworld
   if ($pal) { Write-Host "  [ok]   Palworld found: $pal" }
   else      { Write-Host '  [FAIL] Palworld not found'; $ok = $false }
+  if ($pal) {
+    $ue4ss = Get-UE4SSRoot $pal
+    if ($ue4ss) { Write-Host "  [ok]   UE4SS Experimental found: $ue4ss" }
+    else { Write-Host '  [info] UE4SS Experimental not found' }
+  }
   Write-Host ("  [info] Game Pass install detected: {0}" -f (Test-GamePassInstall))
   Write-Host ("  [info] Palworld running: {0}" -f (Test-PalworldRunning))
 
