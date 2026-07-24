@@ -338,6 +338,7 @@ function Refresh-Everything {
     $script:base = $mf.Base
     $script:mods = @($mf.Manifest.mods)
     Say ("Loaded the guild mod list ({0} mod(s))." -f $script:mods.Count) 'ok'
+    Say 'PAL COMMAND companion: /players and the admin dashboard show live, copyable in-game map coordinates.'
   } catch {
     Say "$_" 'err'
     return

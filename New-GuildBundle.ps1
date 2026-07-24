@@ -72,6 +72,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PalworldModManager.ps1
 Welcome to the guild mod pack. You do not need to edit files, use PowerShell,
 or understand how Palworld mods work. The manager handles it.
 
+## PAL COMMAND Companion
+
+The mod pack also works with PAL COMMAND. In Discord, run **`/players`** to see
+each online player's current in-game map coordinates. Admins can view and copy the
+same live coordinates from the Players dashboard. This feature uses read-only server
+telemetry and does not install another game mod.
+
 ## Install In 60 Seconds
 
 1. **Extract this entire ZIP** to a normal folder. Your Desktop is fine.

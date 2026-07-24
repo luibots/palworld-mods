@@ -1,1 +1,16 @@
 GuildMods.zip
+
+# Local credentials and generated runtime files
+.env
+.env.*
+!.env.example
+*.sec
+*.pem
+*.key
+*.pfx
+*.local
+*.local.json
+credentials.local.*
+secrets.local.*
+__pycache__/
+*.py[cod]

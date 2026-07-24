@@ -37,6 +37,14 @@ Open the manager again, **untick** the mod, press **Apply Changes**.
 
 ---
 
+## PAL COMMAND companion
+
+Run **`/players`** in Discord to see each online player's current in-game map coordinates.
+Server admins can also view and copy those live coordinates from the PAL COMMAND Players dashboard.
+This uses read-only server telemetry; it is included with PAL COMMAND rather than installed as a game mod.
+
+---
+
 ## Current mods
 
 | Mod | What it does | Server must match |
