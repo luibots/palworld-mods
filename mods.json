@@ -55,7 +55,43 @@
                      "notes":  "Client only. No server install or restart required. Choose your own value in Palworld camera settings."
                  }
              ],
-    "manifestVersion":  "1.1.0",
+    "beta":  [
+                 {
+                     "id":  "pal-companion-ui",
+                     "name":  "Pal Companion AI Overlay",
+                     "description":  "In-game F2 Paldeck overlay backed by the local Ollama and RAG companion.",
+                     "warning":  "LUIS ONLY. Private pilot with substantial setup; this installs only the UE4SS bridge.",
+                     "version":  "0.1.0-beta",
+                     "installType":  "ue4ss-lua",
+                     "modFolder":  "PalCompanionUI",
+                     "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-local-llm-companion/master/mods/PalCompanionUI",
+                     "setupUrl":  "https://github.com/luibots/palworld-local-llm-companion#in-game-paldeck-prototype",
+                     "privatePilot":  "Luis",
+                     "requires":  [
+                                      "Steam Palworld",
+                                      "UE4SS Experimental Workshop mod",
+                                      "Python 3.11+",
+                                      "Ollama with qwen2.5:3b and embeddinggemma",
+                                      "Local indexed game data",
+                                      "Local companion API on 127.0.0.1:8765"
+                                  ],
+                     "files":  [
+                                   {
+                                       "path":  "enabled.txt",
+                                       "sha256":  "e721c5b69eeec3004eba5dcad872336327f28d99352bf98eaa436247efda51ac"
+                                   },
+                                   {
+                                       "path":  "README.md",
+                                       "sha256":  "a4ad085c62b097e871c75131e96f8d25405b6d3f603ef105ad09df2187793b02"
+                                   },
+                                   {
+                                       "path":  "scripts/main.lua",
+                                       "sha256":  "540e54ecdf9aa52919422c1d8405efed6b84700e6d074d90b4e4ae4c63a8b8e2"
+                                   }
+                               ]
+                 }
+             ],
+    "manifestVersion":  "1.2.0",
     "authors":  [
                     "Luibot",
                     "AyeGuild"

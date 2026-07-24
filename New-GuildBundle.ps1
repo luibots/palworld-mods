@@ -79,6 +79,14 @@ each online player's current in-game map coordinates. Admins can view and copy t
 same live coordinates from the Players dashboard. This feature uses read-only server
 telemetry and does not install another game mod.
 
+## Private Beta
+
+The manager includes a separate **BETA - PRIVATE PILOT** section for Luis's Pal
+Companion AI overlay. It is not part of the normal guild setup. Installing the beta
+adds only its UE4SS bridge; UE4SS Experimental, Python, Ollama, local models, indexed
+game data, and the companion API all require separate setup. Read and accept the
+warning in the manager before enabling it.
+
 ## Install In 60 Seconds
 
 1. **Extract this entire ZIP** to a normal folder. Your Desktop is fine.

@@ -126,6 +126,84 @@ function Uninstall-Mod([string]$pal, $mod) {
   if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force }
 }
 
+function Get-UE4SSRoot([string]$pal) {
+  Join-Path $pal 'Mods\NativeMods\UE4SS'
+}
+
+function Get-BetaDestination([string]$pal, $beta) {
+  Join-Path (Get-UE4SSRoot $pal) ("Mods\{0}" -f $beta.modFolder)
+}
+
+function Test-BetaInstalled([string]$pal, $beta) {
+  if ($beta.installType -ne 'ue4ss-lua') { return $false }
+  Test-Path -LiteralPath (Join-Path (Get-BetaDestination $pal $beta) 'scripts\main.lua')
+}
+
+function Install-Beta([string]$pal, $beta) {
+  if ($beta.installType -ne 'ue4ss-lua') {
+    throw "Unsupported beta installer type: $($beta.installType)"
+  }
+  $ue4ss = Get-UE4SSRoot $pal
+  if (-not (Test-Path -LiteralPath $ue4ss)) {
+    throw @"
+UE4SS Experimental is required for this beta.
+Subscribe in Steam Workshop, enable it in Palworld's Mod Manager, launch once,
+close Palworld, and then run this installer again.
+"@
+  }
+
+  $stage = Join-Path $env:TEMP ("ayeguild-beta-" + [guid]::NewGuid().ToString('N'))
+  $destination = Get-BetaDestination $pal $beta
+  try {
+    New-Item -ItemType Directory -Force $stage | Out-Null
+    foreach ($file in $beta.files) {
+      $relative = ([string]$file.path) -replace '/', '\'
+      $stagedFile = Join-Path $stage $relative
+      New-Item -ItemType Directory -Force (Split-Path $stagedFile -Parent) | Out-Null
+      $url = ("{0}/{1}" -f ([string]$beta.sourceBase).TrimEnd('/'), ([string]$file.path))
+      Invoke-WebRequest -Uri $url -OutFile $stagedFile -UseBasicParsing -TimeoutSec 60
+      if ($file.sha256) {
+        $actual = (Get-FileHash -LiteralPath $stagedFile -Algorithm SHA256).Hash.ToLower()
+        if ($actual -ne ([string]$file.sha256).ToLower()) {
+          throw "Download verification failed for beta file '$($file.path)'."
+        }
+      }
+    }
+    if (Test-Path -LiteralPath $destination) {
+      Remove-Item -LiteralPath $destination -Recurse -Force
+    }
+    New-Item -ItemType Directory -Force (Split-Path $destination -Parent) | Out-Null
+    Copy-Item -LiteralPath $stage -Destination $destination -Recurse -Force
+
+    $modsFile = Join-Path $ue4ss 'Mods\mods.txt'
+    $lines = if (Test-Path -LiteralPath $modsFile) { @(Get-Content -LiteralPath $modsFile) } else { @() }
+    $escaped = [regex]::Escape([string]$beta.modFolder)
+    $lines = @($lines | Where-Object { $_ -notmatch ("^\s*{0}\s*:" -f $escaped) })
+    $lines += ("{0} : 1" -f $beta.modFolder)
+    [IO.File]::WriteAllLines($modsFile, $lines, [Text.UTF8Encoding]::new($false))
+  } finally {
+    if (Test-Path -LiteralPath $stage) {
+      Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+    }
+  }
+}
+
+function Uninstall-Beta([string]$pal, $beta) {
+  $ue4ss = Get-UE4SSRoot $pal
+  $destination = Get-BetaDestination $pal $beta
+  if (Test-Path -LiteralPath $destination) {
+    Remove-Item -LiteralPath $destination -Recurse -Force
+  }
+  $modsFile = Join-Path $ue4ss 'Mods\mods.txt'
+  if (Test-Path -LiteralPath $modsFile) {
+    $escaped = [regex]::Escape([string]$beta.modFolder)
+    $lines = @(Get-Content -LiteralPath $modsFile | Where-Object {
+      $_ -notmatch ("^\s*{0}\s*:" -f $escaped)
+    })
+    [IO.File]::WriteAllLines($modsFile, $lines, [Text.UTF8Encoding]::new($false))
+  }
+}
+
 # ---------------------------------------------------------------- self test
 
 if ($SelfTest) {
@@ -155,6 +233,10 @@ if ($SelfTest) {
       if (-not (Test-ModInstalled $pal $m0)) { Write-Host '  [ok]   uninstall worked' }
       else { Write-Host '  [FAIL] uninstall left the file'; $ok = $false }
       if ($wasInstalled) { Install-Mod $pal $mf.Base $m0; Write-Host '  [info] restored prior installed state' }
+    }
+    foreach ($beta in @($mf.Manifest.beta)) {
+      $state = if ($pal -and (Test-BetaInstalled $pal $beta)) { 'BRIDGE INSTALLED' } else { 'not installed' }
+      Write-Host ("  [beta] {0} [{1}] - private pilot; guided setup required" -f $beta.name, $state)
     }
   } catch { Write-Host "  [FAIL] $_"; $ok = $false }
 
@@ -245,16 +327,31 @@ $browse.Anchor = 'Top,Right'
 $form.Controls.Add($browse)
 
 $catalogLabel = New-Object System.Windows.Forms.Label
-$catalogLabel.Text = 'AYEGUILD APPROVED MODS'
+$catalogLabel.Text = 'MOD CATALOG'
 $catalogLabel.Location = New-Object System.Drawing.Point(16, 200)
 $catalogLabel.AutoSize = $true
 $catalogLabel.ForeColor = $ink
 $catalogLabel.Font = New-Object System.Drawing.Font('Segoe UI', 8, [System.Drawing.FontStyle]::Bold)
 $form.Controls.Add($catalogLabel)
 
+$tabs = New-Object System.Windows.Forms.TabControl
+$tabs.Location = New-Object System.Drawing.Point(16, 222)
+$tabs.Size = New-Object System.Drawing.Size(846, 310)
+$tabs.Anchor = 'Top,Left,Right,Bottom'
+$form.Controls.Add($tabs)
+
+$approvedTab = New-Object System.Windows.Forms.TabPage
+$approvedTab.Text = 'APPROVED MODS'
+$approvedTab.BackColor = [System.Drawing.Color]::White
+$tabs.TabPages.Add($approvedTab)
+
+$betaTab = New-Object System.Windows.Forms.TabPage
+$betaTab.Text = 'BETA - PRIVATE PILOT'
+$betaTab.BackColor = [System.Drawing.Color]::White
+$tabs.TabPages.Add($betaTab)
+
 $list = New-Object System.Windows.Forms.ListView
-$list.Location = New-Object System.Drawing.Point(16, 222)
-$list.Size = New-Object System.Drawing.Size(846, 310)
+$list.Dock = 'Fill'
 $list.View = 'Details'
 $list.CheckBoxes = $true
 $list.FullRowSelect = $true
@@ -264,9 +361,33 @@ $list.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 [void]$list.Columns.Add('Version', 70)
 [void]$list.Columns.Add('Install', 100)
 [void]$list.Columns.Add('Status', 100)
-[void]$list.Columns.Add('What it does', 370)
-$list.Anchor = 'Top,Left,Right,Bottom'
-$form.Controls.Add($list)
+[void]$list.Columns.Add('What it does', 340)
+$approvedTab.Controls.Add($list)
+
+$betaWarning = New-Object System.Windows.Forms.Label
+$betaWarning.Text = 'PRIVATE PILOT: LUIS ONLY. Installing the bridge is not the full setup. UE4SS, Ollama, Python, indexed game data, and the local companion service are required.'
+$betaWarning.ForeColor = $red
+$betaWarning.Font = New-Object System.Drawing.Font('Segoe UI', 9, [System.Drawing.FontStyle]::Bold)
+$betaWarning.Location = New-Object System.Drawing.Point(8, 8)
+$betaWarning.Size = New-Object System.Drawing.Size(810, 38)
+$betaWarning.Anchor = 'Top,Left,Right'
+$betaTab.Controls.Add($betaWarning)
+
+$betaList = New-Object System.Windows.Forms.ListView
+$betaList.Location = New-Object System.Drawing.Point(8, 50)
+$betaList.Size = New-Object System.Drawing.Size(812, 224)
+$betaList.View = 'Details'
+$betaList.CheckBoxes = $true
+$betaList.FullRowSelect = $true
+$betaList.GridLines = $false
+$betaList.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+[void]$betaList.Columns.Add('Private Beta', 190)
+[void]$betaList.Columns.Add('Version', 70)
+[void]$betaList.Columns.Add('Installs', 120)
+[void]$betaList.Columns.Add('Status', 105)
+[void]$betaList.Columns.Add('Setup warning', 300)
+$betaList.Anchor = 'Top,Bottom,Left,Right'
+$betaTab.Controls.Add($betaList)
 
 $apply = New-Object System.Windows.Forms.Button
 $apply.Text = 'Apply Changes'
@@ -293,6 +414,13 @@ $openDir.Size = New-Object System.Drawing.Size(140, 34)
 $openDir.Anchor = 'Left,Bottom'
 $form.Controls.Add($openDir)
 
+$betaGuide = New-Object System.Windows.Forms.Button
+$betaGuide.Text = 'Beta Setup Guide'
+$betaGuide.Location = New-Object System.Drawing.Point(416, 544)
+$betaGuide.Size = New-Object System.Drawing.Size(140, 34)
+$betaGuide.Anchor = 'Left,Bottom'
+$form.Controls.Add($betaGuide)
+
 $status = New-Object System.Windows.Forms.TextBox
 $status.Location = New-Object System.Drawing.Point(16, 588)
 $status.Size = New-Object System.Drawing.Size(846, 84)
@@ -307,6 +435,7 @@ $form.Controls.Add($status)
 $script:pal      = $null
 $script:base     = $null
 $script:mods     = @()
+$script:betas    = @()
 
 function Say([string]$m, [string]$kind = 'info') {
   $prefix = switch ($kind) { 'ok' { '[ok]   ' } 'err' { '[!]    ' } default { '       ' } }
@@ -318,6 +447,7 @@ function Say([string]$m, [string]$kind = 'info') {
 
 function Refresh-Everything {
   $list.Items.Clear()
+  $betaList.Items.Clear()
   $script:pal = Find-Palworld
   if ($script:pal) {
     $pathLabel.ForeColor = $green
@@ -337,7 +467,11 @@ function Refresh-Everything {
     $mf = Get-Manifest
     $script:base = $mf.Base
     $script:mods = @($mf.Manifest.mods)
+    $script:betas = @($mf.Manifest.beta)
     Say ("Loaded the guild mod list ({0} mod(s))." -f $script:mods.Count) 'ok'
+    if ($script:betas.Count) {
+      Say ("Loaded {0} private beta pilot(s). Beta setup is intentionally separate from approved mods." -f $script:betas.Count)
+    }
     Say 'PAL COMMAND companion: /players and the admin dashboard show live, copyable in-game map coordinates.'
   } catch {
     Say "$_" 'err'
@@ -355,6 +489,18 @@ function Refresh-Everything {
     $it.Tag = $m
     if ($installed) { $it.ForeColor = $green }
     [void]$list.Items.Add($it)
+  }
+  foreach ($beta in $script:betas) {
+    $installed = $script:pal -and (Test-BetaInstalled $script:pal $beta)
+    $it = New-Object System.Windows.Forms.ListViewItem($beta.name)
+    [void]$it.SubItems.Add($(if ($beta.version) { "v$($beta.version)" } else { '-' }))
+    [void]$it.SubItems.Add('UE4SS bridge only')
+    [void]$it.SubItems.Add($(if ($installed) { 'Bridge installed' } else { 'Not installed' }))
+    [void]$it.SubItems.Add([string]$beta.warning)
+    $it.Checked = [bool]$installed
+    $it.Tag = $beta
+    if ($installed) { $it.ForeColor = $green } else { $it.ForeColor = $red }
+    [void]$betaList.Items.Add($it)
   }
   if (-not $script:pal) { return }
   $anyRec = $script:mods | Where-Object { $_.recommended -and -not (Test-ModInstalled $script:pal $_) }
@@ -383,6 +529,39 @@ $apply.Add_Click({
         Say "$($m.name) removed." 'ok'
       }
     }
+    foreach ($it in $betaList.Items) {
+      $beta = $it.Tag
+      $installed = Test-BetaInstalled $script:pal $beta
+      if ($it.Checked -and -not $installed) {
+        $warning = @"
+$($beta.name) is a private beta for Luis only.
+
+This installs only the UE4SS in-game bridge. It does NOT install or configure Ollama,
+Python, game-data indexing, the local API, or web/live integrations. The feature may
+break after a Palworld update and can affect game performance while AI models are loaded.
+
+Continue with the bridge installation?
+"@
+        $answer = [System.Windows.Forms.MessageBox]::Show(
+          $warning,
+          'Private beta - substantial setup required',
+          [System.Windows.Forms.MessageBoxButtons]::YesNo,
+          [System.Windows.Forms.MessageBoxIcon]::Warning
+        )
+        if ($answer -ne [System.Windows.Forms.DialogResult]::Yes) {
+          $it.Checked = $false
+          Say "$($beta.name) beta installation cancelled."
+          continue
+        }
+        Say "Installing private beta bridge: $($beta.name)..."
+        Install-Beta $script:pal $beta
+        Say "$($beta.name) bridge installed. Complete the setup guide before pressing F2 in game." 'ok'
+      } elseif (-not $it.Checked -and $installed) {
+        Say "Removing private beta bridge: $($beta.name)..."
+        Uninstall-Beta $script:pal $beta
+        Say "$($beta.name) bridge removed. Local companion files and Ollama were left untouched." 'ok'
+      }
+    }
     Say 'All done. You can start Palworld now.' 'ok'
   } catch {
     Say "$_" 'err'
@@ -401,6 +580,15 @@ $openDir.Add_Click({
   $d = Get-ModsDir $script:pal
   if (-not (Test-Path -LiteralPath $d)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
   Start-Process explorer.exe $d
+})
+
+$betaGuide.Add_Click({
+  $beta = $script:betas | Select-Object -First 1
+  if (-not $beta -or -not $beta.setupUrl) {
+    Say 'No beta setup guide is available.' 'err'
+    return
+  }
+  Start-Process ([string]$beta.setupUrl)
 })
 
 $browse.Add_Click({
