@@ -96,10 +96,19 @@ function Get-ModsDir([string]$pal) { Join-Path $pal 'Pal\Content\Paks\~mods' }
 function Get-ModFileName($mod)     { Split-Path ($mod.file -replace '/', '\') -Leaf }
 
 function Test-ModInstalled([string]$pal, $mod) {
+  if ($mod.installType -eq 'ue4ss-lua') {
+    $destination = Get-Ue4ssDestination $pal $mod
+    return $destination -and
+      (Test-Path -LiteralPath (Join-Path $destination 'scripts\main.lua'))
+  }
   Test-Path -LiteralPath (Join-Path (Get-ModsDir $pal) (Get-ModFileName $mod))
 }
 
 function Install-Mod([string]$pal, [string]$base, $mod) {
+  if ($mod.installType -eq 'ue4ss-lua') {
+    Install-Ue4ssMod $pal $base $mod
+    return
+  }
   $dir = Get-ModsDir $pal
   if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
   $dest = Join-Path $dir (Get-ModFileName $mod)
@@ -118,34 +127,17 @@ function Install-Mod([string]$pal, [string]$base, $mod) {
       throw "Download verification failed for '$($mod.name)'. Nothing was installed."
     }
   }
-  Move-Item -LiteralPath $tmp -Destination $dest -Force
+  Copy-Item -LiteralPath $tmp -Destination $dest -Force
+  Remove-Item -LiteralPath $tmp -Force
 }
 
 function Uninstall-Mod([string]$pal, $mod) {
+  if ($mod.installType -eq 'ue4ss-lua') {
+    Uninstall-Ue4ssMod $pal $mod
+    return
+  }
   $f = Join-Path (Get-ModsDir $pal) (Get-ModFileName $mod)
   if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force }
-}
-
-function Get-WorkshopItemRoot([string]$pal, [string]$workshopId) {
-  $common = Split-Path $pal -Parent
-  $steamApps = Split-Path $common -Parent
-  if ((Split-Path $common -Leaf) -ne 'common' -or
-      (Split-Path $steamApps -Leaf) -ne 'steamapps') {
-    return $null
-  }
-  Join-Path $steamApps ("workshop\content\1623730\{0}" -f $workshopId)
-}
-
-function Test-WorkshopSubscribed([string]$pal, $workshop) {
-  $root = Get-WorkshopItemRoot $pal ([string]$workshop.workshopId)
-  $root -and (Test-Path -LiteralPath $root) -and
-    @(Get-ChildItem -LiteralPath $root -Force -ErrorAction SilentlyContinue).Count -gt 0
-}
-
-function Open-WorkshopItem($workshop) {
-  $id = [string]$workshop.workshopId
-  if ($id -notmatch '^\d+$') { throw "Invalid Steam Workshop item ID." }
-  Start-Process ("steam://url/CommunityFilePage/{0}" -f $id)
 }
 
 function Get-UE4SSRoot([string]$pal) {
@@ -156,8 +148,11 @@ function Get-UE4SSRoot([string]$pal) {
 
   # Steam keeps Workshop native mods beside the library's common folder. The official
   # UE4SS Experimental item runs from here and is not copied into the game directory.
-  $workshopRoot = Get-WorkshopItemRoot $pal '3625223587'
-  if ($workshopRoot) { $candidates.Add($workshopRoot) }
+  $common = Split-Path $pal -Parent
+  $steamApps = Split-Path $common -Parent
+  if ((Split-Path $common -Leaf) -eq 'common' -and (Split-Path $steamApps -Leaf) -eq 'steamapps') {
+    $candidates.Add((Join-Path $steamApps 'workshop\content\1623730\3625223587'))
+  }
 
   foreach ($candidate in $candidates) {
     if ((Test-Path -LiteralPath (Join-Path $candidate 'UE4SS.dll')) -and
@@ -168,46 +163,55 @@ function Get-UE4SSRoot([string]$pal) {
   return $null
 }
 
-function Get-BetaDestination([string]$pal, $beta) {
+function Get-Ue4ssDestination([string]$pal, $entry) {
   $ue4ss = Get-UE4SSRoot $pal
   if (-not $ue4ss) { return $null }
-  Join-Path $ue4ss ("Mods\{0}" -f $beta.modFolder)
+  Join-Path $ue4ss ("Mods\{0}" -f $entry.modFolder)
 }
 
 function Test-BetaInstalled([string]$pal, $beta) {
   if ($beta.installType -ne 'ue4ss-lua') { return $false }
-  $destination = Get-BetaDestination $pal $beta
+  $destination = Get-Ue4ssDestination $pal $beta
   if (-not $destination) { return $false }
   Test-Path -LiteralPath (Join-Path $destination 'scripts\main.lua')
 }
 
-function Install-Beta([string]$pal, $beta) {
-  if ($beta.installType -ne 'ue4ss-lua') {
-    throw "Unsupported beta installer type: $($beta.installType)"
+function Install-Ue4ssMod([string]$pal, [string]$base, $entry) {
+  if ($entry.installType -ne 'ue4ss-lua') {
+    throw "Unsupported UE4SS installer type: $($entry.installType)"
   }
   $ue4ss = Get-UE4SSRoot $pal
   if (-not $ue4ss) {
     throw @"
-UE4SS Experimental is required for this beta.
+UE4SS Experimental is required for $($entry.name).
 Subscribe in Steam Workshop, enable it in Palworld's Mod Manager, launch once,
 close Palworld, and then run this installer again.
 "@
   }
 
-  $stage = Join-Path $env:TEMP ("ayeguild-beta-" + [guid]::NewGuid().ToString('N'))
-  $destination = Get-BetaDestination $pal $beta
+  $stage = Join-Path $env:TEMP ("ayeguild-ue4ss-" + [guid]::NewGuid().ToString('N'))
+  $destination = Get-Ue4ssDestination $pal $entry
   try {
     New-Item -ItemType Directory -Force $stage | Out-Null
-    foreach ($file in $beta.files) {
+    foreach ($file in $entry.files) {
       $relative = ([string]$file.path) -replace '/', '\'
       $stagedFile = Join-Path $stage $relative
       New-Item -ItemType Directory -Force (Split-Path $stagedFile -Parent) | Out-Null
-      $url = ("{0}/{1}" -f ([string]$beta.sourceBase).TrimEnd('/'), ([string]$file.path))
-      Invoke-WebRequest -Uri $url -OutFile $stagedFile -UseBasicParsing -TimeoutSec 60
+      $localFile = if ($entry.sourceDir) {
+        Join-Path $base ((Join-Path ([string]$entry.sourceDir) $relative) -replace '/', '\')
+      } else { $null }
+      if ($localFile -and (Test-Path -LiteralPath $localFile)) {
+        Copy-Item -LiteralPath $localFile -Destination $stagedFile -Force
+      } elseif ($entry.sourceBase) {
+        $url = ("{0}/{1}" -f ([string]$entry.sourceBase).TrimEnd('/'), ([string]$file.path))
+        Invoke-WebRequest -Uri $url -OutFile $stagedFile -UseBasicParsing -TimeoutSec 60
+      } else {
+        throw "Installer source missing for '$($entry.name)' file '$($file.path)'."
+      }
       if ($file.sha256) {
         $actual = (Get-FileHash -LiteralPath $stagedFile -Algorithm SHA256).Hash.ToLower()
         if ($actual -ne ([string]$file.sha256).ToLower()) {
-          throw "Download verification failed for beta file '$($file.path)'."
+          throw "Verification failed for '$($entry.name)' file '$($file.path)'."
         }
       }
     }
@@ -219,9 +223,9 @@ close Palworld, and then run this installer again.
 
     $modsFile = Join-Path $ue4ss 'Mods\mods.txt'
     $lines = if (Test-Path -LiteralPath $modsFile) { @(Get-Content -LiteralPath $modsFile) } else { @() }
-    $escaped = [regex]::Escape([string]$beta.modFolder)
+    $escaped = [regex]::Escape([string]$entry.modFolder)
     $lines = @($lines | Where-Object { $_ -notmatch ("^\s*{0}\s*:" -f $escaped) })
-    $lines += ("{0} : 1" -f $beta.modFolder)
+    $lines += ("{0} : 1" -f $entry.modFolder)
     [IO.File]::WriteAllLines($modsFile, $lines, [Text.UTF8Encoding]::new($false))
   } finally {
     if (Test-Path -LiteralPath $stage) {
@@ -230,21 +234,29 @@ close Palworld, and then run this installer again.
   }
 }
 
-function Uninstall-Beta([string]$pal, $beta) {
+function Uninstall-Ue4ssMod([string]$pal, $entry) {
   $ue4ss = Get-UE4SSRoot $pal
   if (-not $ue4ss) { return }
-  $destination = Get-BetaDestination $pal $beta
+  $destination = Get-Ue4ssDestination $pal $entry
   if (Test-Path -LiteralPath $destination) {
     Remove-Item -LiteralPath $destination -Recurse -Force
   }
   $modsFile = Join-Path $ue4ss 'Mods\mods.txt'
   if (Test-Path -LiteralPath $modsFile) {
-    $escaped = [regex]::Escape([string]$beta.modFolder)
+    $escaped = [regex]::Escape([string]$entry.modFolder)
     $lines = @(Get-Content -LiteralPath $modsFile | Where-Object {
       $_ -notmatch ("^\s*{0}\s*:" -f $escaped)
     })
     [IO.File]::WriteAllLines($modsFile, $lines, [Text.UTF8Encoding]::new($false))
   }
+}
+
+function Install-Beta([string]$pal, $beta) {
+  Install-Ue4ssMod $pal '' $beta
+}
+
+function Uninstall-Beta([string]$pal, $beta) {
+  Uninstall-Ue4ssMod $pal $beta
 }
 
 # ---------------------------------------------------------------- self test
@@ -261,7 +273,8 @@ if ($SelfTest) {
     else { Write-Host '  [info] UE4SS Experimental not found' }
   }
   Write-Host ("  [info] Game Pass install detected: {0}" -f (Test-GamePassInstall))
-  Write-Host ("  [info] Palworld running: {0}" -f (Test-PalworldRunning))
+  $gameRunning = Test-PalworldRunning
+  Write-Host ("  [info] Palworld running: {0}" -f $gameRunning)
 
   try {
     $mf = Get-Manifest
@@ -270,7 +283,7 @@ if ($SelfTest) {
       $state = if ($pal -and (Test-ModInstalled $pal $m)) { 'INSTALLED' } else { 'not installed' }
       Write-Host ("         - {0}  [{1}]" -f $m.name, $state)
     }
-    if ($pal) {
+    if ($pal -and -not $gameRunning) {
       $m0 = $mf.Manifest.mods[0]
       Write-Host "  [test] install/uninstall round trip on '$($m0.name)'..."
       $wasInstalled = Test-ModInstalled $pal $m0
@@ -281,14 +294,40 @@ if ($SelfTest) {
       if (-not (Test-ModInstalled $pal $m0)) { Write-Host '  [ok]   uninstall worked' }
       else { Write-Host '  [FAIL] uninstall left the file'; $ok = $false }
       if ($wasInstalled) { Install-Mod $pal $mf.Base $m0; Write-Host '  [info] restored prior installed state' }
+    } elseif ($pal) {
+      Write-Host '  [info] install/uninstall round trip skipped while Palworld is running'
+    }
+    $ue4ssMod = @($mf.Manifest.mods | Where-Object { $_.installType -eq 'ue4ss-lua' } | Select-Object -First 1)
+    if ($ue4ssMod.Count -eq 1) {
+      $fakePal = Join-Path $env:TEMP ("ayeguild-manager-test-" + [guid]::NewGuid().ToString('N'))
+      $fakeUe4ss = Join-Path $fakePal 'Mods\NativeMods\UE4SS'
+      try {
+        New-Item -ItemType Directory -Force (Join-Path $fakeUe4ss 'Mods') | Out-Null
+        New-Item -ItemType File -Force (Join-Path $fakeUe4ss 'UE4SS.dll') | Out-Null
+        Write-Host "  [test] UE4SS install/uninstall round trip on '$($ue4ssMod[0].name)'..."
+        Install-Mod $fakePal $mf.Base $ue4ssMod[0]
+        if (Test-ModInstalled $fakePal $ue4ssMod[0]) {
+          Write-Host '  [ok]   UE4SS install worked (all hashes verified)'
+        } else {
+          Write-Host '  [FAIL] UE4SS install did not produce the script'
+          $ok = $false
+        }
+        Uninstall-Mod $fakePal $ue4ssMod[0]
+        if (-not (Test-ModInstalled $fakePal $ue4ssMod[0])) {
+          Write-Host '  [ok]   UE4SS uninstall worked'
+        } else {
+          Write-Host '  [FAIL] UE4SS uninstall left the script'
+          $ok = $false
+        }
+      } finally {
+        if (Test-Path -LiteralPath $fakePal) {
+          Remove-Item -LiteralPath $fakePal -Recurse -Force -ErrorAction SilentlyContinue
+        }
+      }
     }
     foreach ($beta in @($mf.Manifest.beta)) {
       $state = if ($pal -and (Test-BetaInstalled $pal $beta)) { 'BRIDGE INSTALLED' } else { 'not installed' }
       Write-Host ("  [beta] {0} [{1}] - private pilot; guided setup required" -f $beta.name, $state)
-    }
-    foreach ($workshop in @($mf.Manifest.workshop)) {
-      $state = if ($pal -and (Test-WorkshopSubscribed $pal $workshop)) { 'SUBSCRIBED' } else { 'not subscribed' }
-      Write-Host ("  [workshop] {0} [{1}]" -f $workshop.name, $state)
     }
   } catch { Write-Host "  [FAIL] $_"; $ok = $false }
 
@@ -397,11 +436,6 @@ $approvedTab.Text = 'APPROVED MODS'
 $approvedTab.BackColor = [System.Drawing.Color]::White
 $tabs.TabPages.Add($approvedTab)
 
-$workshopTab = New-Object System.Windows.Forms.TabPage
-$workshopTab.Text = 'WORKSHOP ADD-ONS'
-$workshopTab.BackColor = [System.Drawing.Color]::White
-$tabs.TabPages.Add($workshopTab)
-
 $betaTab = New-Object System.Windows.Forms.TabPage
 $betaTab.Text = 'BETA - PRIVATE PILOT'
 $betaTab.BackColor = [System.Drawing.Color]::White
@@ -420,36 +454,6 @@ $list.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 [void]$list.Columns.Add('Status', 100)
 [void]$list.Columns.Add('What it does', 340)
 $approvedTab.Controls.Add($list)
-
-$workshopList = New-Object System.Windows.Forms.ListView
-$workshopList.Location = New-Object System.Drawing.Point(0, 0)
-$workshopList.Size = New-Object System.Drawing.Size(838, 236)
-$workshopList.View = 'Details'
-$workshopList.FullRowSelect = $true
-$workshopList.MultiSelect = $false
-$workshopList.GridLines = $false
-$workshopList.Font = New-Object System.Drawing.Font('Segoe UI', 9)
-[void]$workshopList.Columns.Add('Workshop Add-on', 190)
-[void]$workshopList.Columns.Add('Scope', 90)
-[void]$workshopList.Columns.Add('Status', 110)
-[void]$workshopList.Columns.Add('What it does', 420)
-$workshopList.Anchor = 'Top,Bottom,Left,Right'
-$workshopTab.Controls.Add($workshopList)
-
-$openWorkshop = New-Object System.Windows.Forms.Button
-$openWorkshop.Text = 'Open Selected in Steam'
-$openWorkshop.Location = New-Object System.Drawing.Point(8, 242)
-$openWorkshop.Size = New-Object System.Drawing.Size(170, 30)
-$openWorkshop.Anchor = 'Left,Bottom'
-$workshopTab.Controls.Add($openWorkshop)
-
-$workshopHint = New-Object System.Windows.Forms.Label
-$workshopHint.Text = 'Subscribe in Steam, then enable it under Palworld Options > Mod Management.'
-$workshopHint.Location = New-Object System.Drawing.Point(190, 249)
-$workshopHint.Size = New-Object System.Drawing.Size(620, 20)
-$workshopHint.ForeColor = [System.Drawing.Color]::FromArgb(90, 96, 108)
-$workshopHint.Anchor = 'Left,Right,Bottom'
-$workshopTab.Controls.Add($workshopHint)
 
 $betaWarning = New-Object System.Windows.Forms.Label
 $betaWarning.Text = 'PRIVATE PILOT: LUIS ONLY. Installing the bridge is not the full setup. UE4SS, Ollama, Python, indexed game data, and the local companion service are required.'
@@ -522,7 +526,6 @@ $form.Controls.Add($status)
 $script:pal      = $null
 $script:base     = $null
 $script:mods     = @()
-$script:workshop = @()
 $script:betas    = @()
 
 function Say([string]$m, [string]$kind = 'info') {
@@ -535,7 +538,6 @@ function Say([string]$m, [string]$kind = 'info') {
 
 function Refresh-Everything {
   $list.Items.Clear()
-  $workshopList.Items.Clear()
   $betaList.Items.Clear()
   $script:pal = Find-Palworld
   if ($script:pal) {
@@ -556,14 +558,10 @@ function Refresh-Everything {
     $mf = Get-Manifest
     $script:base = $mf.Base
     $script:mods = @($mf.Manifest.mods)
-    $script:workshop = @($mf.Manifest.workshop)
     $script:betas = @($mf.Manifest.beta)
     Say ("Loaded the guild mod list ({0} mod(s))." -f $script:mods.Count) 'ok'
     if ($script:betas.Count) {
       Say ("Loaded {0} private beta pilot(s). Beta setup is intentionally separate from approved mods." -f $script:betas.Count)
-    }
-    if ($script:workshop.Count) {
-      Say ("Loaded {0} optional Steam Workshop add-on(s)." -f $script:workshop.Count)
     }
     Say 'PAL COMMAND companion: /players and the admin dashboard show live, copyable in-game map coordinates.'
   } catch {
@@ -582,16 +580,6 @@ function Refresh-Everything {
     $it.Tag = $m
     if ($installed) { $it.ForeColor = $green }
     [void]$list.Items.Add($it)
-  }
-  foreach ($workshop in $script:workshop) {
-    $subscribed = $script:pal -and (Test-WorkshopSubscribed $script:pal $workshop)
-    $it = New-Object System.Windows.Forms.ListViewItem($workshop.name)
-    [void]$it.SubItems.Add($(if ($workshop.clientOnly) { 'Client only' } else { 'Server + client' }))
-    [void]$it.SubItems.Add($(if ($subscribed) { 'Subscribed' } else { 'Not subscribed' }))
-    [void]$it.SubItems.Add([string]$workshop.description)
-    $it.Tag = $workshop
-    if ($subscribed) { $it.ForeColor = $green }
-    [void]$workshopList.Items.Add($it)
   }
   foreach ($beta in $script:betas) {
     $installed = $script:pal -and (Test-BetaInstalled $script:pal $beta)
@@ -677,22 +665,6 @@ Continue with the bridge installation?
 })
 
 $refresh.Add_Click({ Refresh-Everything })
-
-$openWorkshopItem = {
-  if ($workshopList.SelectedItems.Count -ne 1) {
-    Say 'Select a Workshop add-on first.' 'err'
-    return
-  }
-  $workshop = $workshopList.SelectedItems[0].Tag
-  try {
-    Open-WorkshopItem $workshop
-    Say "Opened $($workshop.name) in Steam. Subscribe there, then enable it in Palworld's Mod Management screen." 'ok'
-  } catch {
-    Say "$_" 'err'
-  }
-}
-$openWorkshop.Add_Click($openWorkshopItem)
-$workshopList.Add_DoubleClick($openWorkshopItem)
 
 $openDir.Add_Click({
   if (-not $script:pal) { Say 'Pick your Palworld folder first.' 'err'; return }

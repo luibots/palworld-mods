@@ -34,14 +34,31 @@ try {
 
   $missing = @()
   foreach ($mod in $manifest.mods) {
-    $rel = $mod.file -replace '/', '\'
-    $src = Join-Path $repo $rel
-    if (-not (Test-Path $src)) { $missing += $mod.file; continue }
-    $dst = Join-Path $stage $rel
-    New-Item -ItemType Directory -Force (Split-Path $dst -Parent) | Out-Null
-    Copy-Item $src $dst -Force
+    if ($mod.installType -eq 'ue4ss-lua') {
+      foreach ($file in $mod.files) {
+        $rel = (Join-Path ([string]$mod.sourceDir) ([string]$file.path)) -replace '/', '\'
+        $src = Join-Path $repo $rel
+        if (-not (Test-Path $src)) { $missing += $rel; continue }
+        if ($file.sha256) {
+          $actual = (Get-FileHash -LiteralPath $src -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne ([string]$file.sha256).ToLower()) {
+            throw "Hash mismatch for $rel"
+          }
+        }
+        $dst = Join-Path $stage $rel
+        New-Item -ItemType Directory -Force (Split-Path $dst -Parent) | Out-Null
+        Copy-Item $src $dst -Force
+      }
+    } else {
+      $rel = $mod.file -replace '/', '\'
+      $src = Join-Path $repo $rel
+      if (-not (Test-Path $src)) { $missing += $mod.file; continue }
+      $dst = Join-Path $stage $rel
+      New-Item -ItemType Directory -Force (Split-Path $dst -Parent) | Out-Null
+      Copy-Item $src $dst -Force
+    }
   }
-  if ($missing.Count) { throw ("Missing pak file(s): " + ($missing -join ', ')) }
+  if ($missing.Count) { throw ("Missing mod file(s): " + ($missing -join ', ')) }
 
   # A dead-simple double-click launcher for non-technical members.
   $bat = @"
@@ -79,12 +96,11 @@ each online player's current in-game map coordinates. Admins can view and copy t
 same live coordinates from the Players dashboard. This feature uses read-only server
 telemetry and does not install another game mod.
 
-## Workshop Add-ons
+## AyeGuild MiniMap
 
-Open **WORKSHOP ADD-ONS** in the manager for approved third-party mods. Select one and
-open its official Steam page, subscribe, then enable it under Palworld
-**Options > Mod Management**. PalMiniMap shows a configurable minimap with your current
-world position and requires UE4SS Experimental.
+Our client-only minimap uses Palworld's own world-map texture and shows your live
+position plus numeric coordinates. It updates twice per second, does not contact the
+server, and can be hidden or shown with **F6**. UE4SS Experimental is required.
 
 ## Private Beta
 

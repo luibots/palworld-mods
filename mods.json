@@ -53,25 +53,47 @@
                                        "world-settings-unlocker"
                                    ],
                      "notes":  "Client only. No server install or restart required. Choose your own value in Palworld camera settings."
+                 },
+                 {
+                     "id":  "ayeguild-minimap",
+                     "name":  "AyeGuild MiniMap",
+                     "description":  "Our lightweight in-game world map with a live local-player marker and current coordinates.",
+                     "installType":  "ue4ss-lua",
+                     "modFolder":  "AyeGuildMiniMap",
+                     "sourceDir":  "mods/ayeguild-minimap/AyeGuildMiniMap",
+                     "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-mods/master/mods/ayeguild-minimap/AyeGuildMiniMap",
+                     "version":  "0.1.0-beta",
+                     "category":  "client-ui",
+                     "gameVersion":  "v1.0.1.100619",
+                     "verified":  "2026-07-24",
+                     "enabled":  true,
+                     "author":  "Luibot",
+                     "team":  "AyeGuild",
+                     "serverSide":  false,
+                     "recommended":  false,
+                     "requires":  [
+                                      "UE4SS Experimental Workshop mod"
+                                  ],
+                     "conflicts":  [
+
+                                   ],
+                     "notes":  "Client only. Press F6 to hide or show it. Uses Palworld's own map texture and never contacts the server.",
+                     "files":  [
+                                   {
+                                       "path":  "enabled.txt",
+                                       "sha256":  "18bb415b09eba905c3ec0ebe82f1e762109368a9bd69b6c64d150cec1005f26e"
+                                   },
+                                   {
+                                       "path":  "README.md",
+                                       "sha256":  "61b02a7597ad470128f7384edaadce4fca703a2565191805dfd01ba469cfff48"
+                                   },
+                                   {
+                                       "path":  "scripts/main.lua",
+                                       "sha256":  "58a22185a918841ab69060b4b2d5486a7cf7ed1078075e2034e9df4d8c8c16bf"
+                                   }
+                               ]
                  }
              ],
-    "workshop":  [
-                     {
-                         "id":  "palminimap",
-                         "name":  "PalMiniMap",
-                         "description":  "Adds a configurable in-game minimap that tracks your current world position.",
-                         "workshopId":  "3766379237",
-                         "workshopUrl":  "https://steamcommunity.com/sharedfiles/filedetails/?id=3766379237",
-                         "version":  "1.0.x",
-                         "verified":  "2026-07-24",
-                         "clientOnly":  true,
-                         "recommended":  true,
-                         "requires":  [
-                                          "UE4SS Experimental Workshop mod"
-                                      ],
-                         "notes":  "Subscribe in Steam, then enable PalMiniMap under Options > Mod Management and restart Palworld."
-                     }
-                 ],
     "beta":  [
                  {
                      "id":  "pal-companion-ui",
