@@ -685,7 +685,7 @@ Continue with the bridge installation?
         }
         Say "Installing private beta bridge: $($beta.name)..."
         Install-Beta $script:pal $beta
-        Say "$($beta.name) bridge installed. Complete the setup guide before pressing F2 in game." 'ok'
+        Say "$($beta.name) bridge installed. Press F2 for AI or F3 for vendors in game." 'ok'
       } elseif (-not $it.Checked -and $installed) {
         Say "Removing private beta bridge: $($beta.name)..."
         Uninstall-Beta $script:pal $beta

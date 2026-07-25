@@ -49,11 +49,12 @@ The manager has a separate **BETA - PRIVATE PILOT** section for the in-game Pal
 Companion overlay. This beta is currently for **Luis only** and is not part of the
 recommended guild setup.
 
-Selecting it installs only the verified UE4SS bridge that opens with `F2`. Substantial
-setup is still required: Steam Palworld, UE4SS Experimental, Python 3.11+, Ollama,
-the local chat and embedding models, indexed game data, and the companion API running
-on `127.0.0.1:8765`. The manager displays this warning and requires confirmation
-before installing the bridge.
+Selecting it installs only the verified UE4SS bridge. `F2` opens the AI companion;
+`F3` opens the instant verified-vendor directory with native map markers and a
+sanitized guild Discord action. Substantial setup is still required: Steam Palworld,
+UE4SS Experimental, Python 3.11+, Ollama, the local chat and embedding models, indexed
+game data, and the companion API running on `127.0.0.1:8765`. The manager displays
+this warning and requires confirmation before installing the bridge.
 
 ---
 

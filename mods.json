@@ -1,7 +1,7 @@
 {
     "schema":  1,
     "name":  "Guild Mod Set",
-    "updated":  "2026-07-23",
+    "updated":  "2026-07-25",
     "mods":  [
                  {
                      "id":  "basefix10",
@@ -98,9 +98,9 @@
                  {
                      "id":  "pal-companion-ui",
                      "name":  "Pal Companion AI Overlay",
-                     "description":  "In-game F2 Paldeck overlay backed by the local Ollama and RAG companion.",
+                     "description":  "In-game F2 AI Paldeck plus an instant F3 verified-vendor directory with map and guild actions.",
                      "warning":  "LUIS ONLY. Private pilot with substantial setup; this installs only the UE4SS bridge.",
-                     "version":  "0.1.0-beta",
+                     "version":  "0.2.0-beta",
                      "installType":  "ue4ss-lua",
                      "modFolder":  "PalCompanionUI",
                      "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-local-llm-companion/master/mods/PalCompanionUI",
@@ -121,16 +121,16 @@
                                    },
                                    {
                                        "path":  "README.md",
-                                       "sha256":  "a4ad085c62b097e871c75131e96f8d25405b6d3f603ef105ad09df2187793b02"
+                                       "sha256":  "4cf33c04433e58a93c99b9177a3a5fc54a18781539d85cb95cd55b6c4fb32658"
                                    },
                                    {
                                        "path":  "scripts/main.lua",
-                                       "sha256":  "540e54ecdf9aa52919422c1d8405efed6b84700e6d074d90b4e4ae4c63a8b8e2"
+                                       "sha256":  "33f5e6f61c292fcc5a092bd2868e94239d795260346a597b50f9d6d51605948a"
                                    }
                                ]
                  }
              ],
-    "manifestVersion":  "1.3.0",
+    "manifestVersion":  "1.4.0",
     "authors":  [
                     "Luibot",
                     "AyeGuild"
