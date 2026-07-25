@@ -5,10 +5,12 @@ local MAP_PACKAGE = "/Game/Pal/Texture/UI/Map/T_WorldMap"
 local MAP_ASSET = "/Game/Pal/Texture/UI/Map/T_WorldMap.T_WorldMap"
 local PLAYER_ICON_PACKAGE = "/Game/Pal/Texture/UI/InGame/T_icon_map_player"
 local PLAYER_ICON_ASSET = "/Game/Pal/Texture/UI/InGame/T_icon_map_player.T_icon_map_player"
-local VIEW_SIZE = 260.0
+local VIEW_SIZE = 220.0
 local VISIBLE_MAP_SPAN = 80.0
 local MAP_MARGIN = 24.0
-local MARKER_SIZE = 30.0
+local MAP_TOP = 68.0
+local MARKER_SIZE = 24.0
+local COORDINATE_HEIGHT = 22.0
 local MAP_MIN = -1000.0
 local MAP_MAX = 1000.0
 local MAP_COORDINATE_SPAN = MAP_MAX - MAP_MIN
@@ -78,10 +80,10 @@ end
 local function add_fixed_widget(canvas, widget, left, top, width, height)
     local slot = canvas:AddChildToCanvas(widget)
     slot:SetAnchors({
-        Minimum = {X = 1.0, Y = 0.0},
-        Maximum = {X = 1.0, Y = 0.0}
+        Minimum = {X = 0.0, Y = 0.0},
+        Maximum = {X = 0.0, Y = 0.0}
     })
-    slot:SetAlignment({X = 1.0, Y = 0.0})
+    slot:SetAlignment({X = 0.0, Y = 0.0})
     slot:SetOffsets({
         Left = left,
         Top = top,
@@ -89,6 +91,12 @@ local function add_fixed_widget(canvas, widget, left, top, width, height)
         Bottom = height
     })
     return slot
+end
+
+local function set_text_size(text_widget, size)
+    local font = text_widget.Font
+    font.Size = size
+    text_widget:SetFont(font)
 end
 
 local function build_minimap()
@@ -106,6 +114,7 @@ local function build_minimap()
     local map_canvas = create_object("/Script/UMG.CanvasPanel", widget_tree)
     local map_image = create_object("/Script/UMG.Image", widget_tree)
     local next_marker_widget = create_object("/Script/UMG.Image", widget_tree)
+    local coordinate_panel = create_object("/Script/UMG.Border", widget_tree)
     local next_coordinate_text = create_object("/Script/UMG.TextBlock", widget_tree)
 
     next_root.WidgetTree = widget_tree
@@ -117,8 +126,8 @@ local function build_minimap()
     add_fixed_widget(
         root_canvas,
         viewport,
-        -MAP_MARGIN,
         MAP_MARGIN,
+        MAP_TOP,
         VIEW_SIZE,
         VIEW_SIZE
     )
@@ -144,23 +153,27 @@ local function build_minimap()
     local next_marker_slot = add_fixed_widget(
         root_canvas,
         next_marker_widget,
-        -MAP_MARGIN - (VIEW_SIZE / 2.0),
         MAP_MARGIN + (VIEW_SIZE / 2.0),
+        MAP_TOP + (VIEW_SIZE / 2.0),
         MARKER_SIZE,
         MARKER_SIZE
     )
     next_marker_slot:SetAlignment({X = 0.5, Y = 0.5})
 
-    next_coordinate_text:SetText(FText("POSITION  X 0  Y 0"))
-    next_coordinate_text:SetShadowOffset({X = 1.5, Y = 1.5})
+    coordinate_panel:SetBrushColor({R = 0.02, G = 0.025, B = 0.035, A = 0.82})
+    next_coordinate_text:SetText(FText("0, 0"))
+    set_text_size(next_coordinate_text, 13)
+    next_coordinate_text:SetJustification(1)
+    next_coordinate_text:SetShadowOffset({X = 1.0, Y = 1.0})
     next_coordinate_text:SetShadowColorAndOpacity({R = 0.0, G = 0.0, B = 0.0, A = 1.0})
+    coordinate_panel:AddChild(next_coordinate_text)
     add_fixed_widget(
         root_canvas,
-        next_coordinate_text,
-        -MAP_MARGIN,
-        MAP_MARGIN + VIEW_SIZE + 6.0,
-        VIEW_SIZE,
-        30.0
+        coordinate_panel,
+        MAP_MARGIN + 8.0,
+        MAP_TOP + VIEW_SIZE - COORDINATE_HEIGHT - 6.0,
+        VIEW_SIZE - 16.0,
+        COORDINATE_HEIGHT
     )
 
     next_root:AddToViewport(100)
@@ -259,8 +272,8 @@ local function update_minimap()
     local marker_x = (VIEW_SIZE / 2.0) + ((map_x - camera_map_x) * pixels_per_map_unit)
     local marker_y = (VIEW_SIZE / 2.0) - ((map_y - camera_map_y) * pixels_per_map_unit)
     marker_slot:SetOffsets({
-        Left = -MAP_MARGIN - VIEW_SIZE + marker_x,
-        Top = MAP_MARGIN + marker_y,
+        Left = MAP_MARGIN + marker_x,
+        Top = MAP_TOP + marker_y,
         Right = MARKER_SIZE,
         Bottom = MARKER_SIZE
     })
@@ -272,7 +285,7 @@ local function update_minimap()
         marker_widget:SetRenderTransformAngle(rotation.Yaw)
     end
     coordinate_text:SetText(FText(string.format(
-        "POSITION  X %d  Y %d",
+        "%d, %d",
         math.floor(map_x + 0.5),
         math.floor(map_y + 0.5)
     )))
