@@ -22,7 +22,7 @@ local map_slot = nil
 local marker_widget = nil
 local marker_slot = nil
 local coordinate_text = nil
-local visible = true
+local visible = false
 local update_queued = false
 local retry_after = 0
 local sample_count = 0
@@ -329,4 +329,4 @@ LoopAsync(250, function()
     return false
 end)
 
-log("Loaded. The minimap will appear after entering a world.")
+log("Prototype loaded hidden. Press F6 to show it.")

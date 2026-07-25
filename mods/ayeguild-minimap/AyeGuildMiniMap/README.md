@@ -2,6 +2,10 @@
 
 Client-only UE4SS Lua mod for Palworld 1.0.
 
+> Prototype retired: this flat-texture implementation is hidden by default and
+> remains packaged only so existing installations can be detected and removed.
+> The replacement will use a Blueprint scene capture and render target.
+
 - Displays a compact 220px high-zoom local view in the upper-left HUD.
 - Uses Palworld's native player marker and rotates it with player heading.
 - Lets the marker visibly move while the map follows and recenters.
