@@ -43,6 +43,15 @@ Run **`/players`** in Discord to see each online player's current in-game map co
 Server admins can also view and copy those live coordinates from the PAL COMMAND Players dashboard.
 This uses read-only server telemetry; it is included with PAL COMMAND rather than installed as a game mod.
 
+## Workshop add-ons
+
+The manager's **WORKSHOP ADD-ONS** tab contains optional third-party mods without
+redistributing their files. Select an add-on and open its official Steam page, subscribe,
+then enable it under Palworld **Options > Mod Management**.
+
+**PalMiniMap** is the first approved add-on. It shows a configurable minimap with your
+current world position and requires UE4SS Experimental.
+
 ## Private beta: Pal Companion AI Overlay
 
 The manager has a separate **BETA - PRIVATE PILOT** section for the in-game Pal
@@ -62,6 +71,7 @@ before installing the bridge.
 | Mod | What it does | Server must match |
 |---|---|---|
 | **10 Bases Per Guild** | Raises the base-camp limit to 10 at every base level. Worker limits stay vanilla. | Yes |
+| **FOV Slider: Up To 150** | Expands the client camera slider to 150. | No |
 
 ---
 

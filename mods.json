@@ -55,6 +55,23 @@
                      "notes":  "Client only. No server install or restart required. Choose your own value in Palworld camera settings."
                  }
              ],
+    "workshop":  [
+                     {
+                         "id":  "palminimap",
+                         "name":  "PalMiniMap",
+                         "description":  "Adds a configurable in-game minimap that tracks your current world position.",
+                         "workshopId":  "3766379237",
+                         "workshopUrl":  "https://steamcommunity.com/sharedfiles/filedetails/?id=3766379237",
+                         "version":  "1.0.x",
+                         "verified":  "2026-07-24",
+                         "clientOnly":  true,
+                         "recommended":  true,
+                         "requires":  [
+                                          "UE4SS Experimental Workshop mod"
+                                      ],
+                         "notes":  "Subscribe in Steam, then enable PalMiniMap under Options > Mod Management and restart Palworld."
+                     }
+                 ],
     "beta":  [
                  {
                      "id":  "pal-companion-ui",
@@ -91,7 +108,7 @@
                                ]
                  }
              ],
-    "manifestVersion":  "1.2.0",
+    "manifestVersion":  "1.3.0",
     "authors":  [
                     "Luibot",
                     "AyeGuild"

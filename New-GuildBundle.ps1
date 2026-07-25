@@ -79,6 +79,13 @@ each online player's current in-game map coordinates. Admins can view and copy t
 same live coordinates from the Players dashboard. This feature uses read-only server
 telemetry and does not install another game mod.
 
+## Workshop Add-ons
+
+Open **WORKSHOP ADD-ONS** in the manager for approved third-party mods. Select one and
+open its official Steam page, subscribe, then enable it under Palworld
+**Options > Mod Management**. PalMiniMap shows a configurable minimap with your current
+world position and requires UE4SS Experimental.
+
 ## Private Beta
 
 The manager includes a separate **BETA - PRIVATE PILOT** section for Luis's Pal

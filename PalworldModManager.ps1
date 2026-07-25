@@ -126,6 +126,28 @@ function Uninstall-Mod([string]$pal, $mod) {
   if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force }
 }
 
+function Get-WorkshopItemRoot([string]$pal, [string]$workshopId) {
+  $common = Split-Path $pal -Parent
+  $steamApps = Split-Path $common -Parent
+  if ((Split-Path $common -Leaf) -ne 'common' -or
+      (Split-Path $steamApps -Leaf) -ne 'steamapps') {
+    return $null
+  }
+  Join-Path $steamApps ("workshop\content\1623730\{0}" -f $workshopId)
+}
+
+function Test-WorkshopSubscribed([string]$pal, $workshop) {
+  $root = Get-WorkshopItemRoot $pal ([string]$workshop.workshopId)
+  $root -and (Test-Path -LiteralPath $root) -and
+    @(Get-ChildItem -LiteralPath $root -Force -ErrorAction SilentlyContinue).Count -gt 0
+}
+
+function Open-WorkshopItem($workshop) {
+  $id = [string]$workshop.workshopId
+  if ($id -notmatch '^\d+$') { throw "Invalid Steam Workshop item ID." }
+  Start-Process ("steam://url/CommunityFilePage/{0}" -f $id)
+}
+
 function Get-UE4SSRoot([string]$pal) {
   $candidates = New-Object System.Collections.Generic.List[string]
 
@@ -134,11 +156,8 @@ function Get-UE4SSRoot([string]$pal) {
 
   # Steam keeps Workshop native mods beside the library's common folder. The official
   # UE4SS Experimental item runs from here and is not copied into the game directory.
-  $common = Split-Path $pal -Parent
-  $steamApps = Split-Path $common -Parent
-  if ((Split-Path $common -Leaf) -eq 'common' -and (Split-Path $steamApps -Leaf) -eq 'steamapps') {
-    $candidates.Add((Join-Path $steamApps 'workshop\content\1623730\3625223587'))
-  }
+  $workshopRoot = Get-WorkshopItemRoot $pal '3625223587'
+  if ($workshopRoot) { $candidates.Add($workshopRoot) }
 
   foreach ($candidate in $candidates) {
     if ((Test-Path -LiteralPath (Join-Path $candidate 'UE4SS.dll')) -and
@@ -267,6 +286,10 @@ if ($SelfTest) {
       $state = if ($pal -and (Test-BetaInstalled $pal $beta)) { 'BRIDGE INSTALLED' } else { 'not installed' }
       Write-Host ("  [beta] {0} [{1}] - private pilot; guided setup required" -f $beta.name, $state)
     }
+    foreach ($workshop in @($mf.Manifest.workshop)) {
+      $state = if ($pal -and (Test-WorkshopSubscribed $pal $workshop)) { 'SUBSCRIBED' } else { 'not subscribed' }
+      Write-Host ("  [workshop] {0} [{1}]" -f $workshop.name, $state)
+    }
   } catch { Write-Host "  [FAIL] $_"; $ok = $false }
 
   try {
@@ -374,6 +397,11 @@ $approvedTab.Text = 'APPROVED MODS'
 $approvedTab.BackColor = [System.Drawing.Color]::White
 $tabs.TabPages.Add($approvedTab)
 
+$workshopTab = New-Object System.Windows.Forms.TabPage
+$workshopTab.Text = 'WORKSHOP ADD-ONS'
+$workshopTab.BackColor = [System.Drawing.Color]::White
+$tabs.TabPages.Add($workshopTab)
+
 $betaTab = New-Object System.Windows.Forms.TabPage
 $betaTab.Text = 'BETA - PRIVATE PILOT'
 $betaTab.BackColor = [System.Drawing.Color]::White
@@ -392,6 +420,36 @@ $list.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 [void]$list.Columns.Add('Status', 100)
 [void]$list.Columns.Add('What it does', 340)
 $approvedTab.Controls.Add($list)
+
+$workshopList = New-Object System.Windows.Forms.ListView
+$workshopList.Location = New-Object System.Drawing.Point(0, 0)
+$workshopList.Size = New-Object System.Drawing.Size(838, 236)
+$workshopList.View = 'Details'
+$workshopList.FullRowSelect = $true
+$workshopList.MultiSelect = $false
+$workshopList.GridLines = $false
+$workshopList.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+[void]$workshopList.Columns.Add('Workshop Add-on', 190)
+[void]$workshopList.Columns.Add('Scope', 90)
+[void]$workshopList.Columns.Add('Status', 110)
+[void]$workshopList.Columns.Add('What it does', 420)
+$workshopList.Anchor = 'Top,Bottom,Left,Right'
+$workshopTab.Controls.Add($workshopList)
+
+$openWorkshop = New-Object System.Windows.Forms.Button
+$openWorkshop.Text = 'Open Selected in Steam'
+$openWorkshop.Location = New-Object System.Drawing.Point(8, 242)
+$openWorkshop.Size = New-Object System.Drawing.Size(170, 30)
+$openWorkshop.Anchor = 'Left,Bottom'
+$workshopTab.Controls.Add($openWorkshop)
+
+$workshopHint = New-Object System.Windows.Forms.Label
+$workshopHint.Text = 'Subscribe in Steam, then enable it under Palworld Options > Mod Management.'
+$workshopHint.Location = New-Object System.Drawing.Point(190, 249)
+$workshopHint.Size = New-Object System.Drawing.Size(620, 20)
+$workshopHint.ForeColor = [System.Drawing.Color]::FromArgb(90, 96, 108)
+$workshopHint.Anchor = 'Left,Right,Bottom'
+$workshopTab.Controls.Add($workshopHint)
 
 $betaWarning = New-Object System.Windows.Forms.Label
 $betaWarning.Text = 'PRIVATE PILOT: LUIS ONLY. Installing the bridge is not the full setup. UE4SS, Ollama, Python, indexed game data, and the local companion service are required.'
@@ -464,6 +522,7 @@ $form.Controls.Add($status)
 $script:pal      = $null
 $script:base     = $null
 $script:mods     = @()
+$script:workshop = @()
 $script:betas    = @()
 
 function Say([string]$m, [string]$kind = 'info') {
@@ -476,6 +535,7 @@ function Say([string]$m, [string]$kind = 'info') {
 
 function Refresh-Everything {
   $list.Items.Clear()
+  $workshopList.Items.Clear()
   $betaList.Items.Clear()
   $script:pal = Find-Palworld
   if ($script:pal) {
@@ -496,10 +556,14 @@ function Refresh-Everything {
     $mf = Get-Manifest
     $script:base = $mf.Base
     $script:mods = @($mf.Manifest.mods)
+    $script:workshop = @($mf.Manifest.workshop)
     $script:betas = @($mf.Manifest.beta)
     Say ("Loaded the guild mod list ({0} mod(s))." -f $script:mods.Count) 'ok'
     if ($script:betas.Count) {
       Say ("Loaded {0} private beta pilot(s). Beta setup is intentionally separate from approved mods." -f $script:betas.Count)
+    }
+    if ($script:workshop.Count) {
+      Say ("Loaded {0} optional Steam Workshop add-on(s)." -f $script:workshop.Count)
     }
     Say 'PAL COMMAND companion: /players and the admin dashboard show live, copyable in-game map coordinates.'
   } catch {
@@ -518,6 +582,16 @@ function Refresh-Everything {
     $it.Tag = $m
     if ($installed) { $it.ForeColor = $green }
     [void]$list.Items.Add($it)
+  }
+  foreach ($workshop in $script:workshop) {
+    $subscribed = $script:pal -and (Test-WorkshopSubscribed $script:pal $workshop)
+    $it = New-Object System.Windows.Forms.ListViewItem($workshop.name)
+    [void]$it.SubItems.Add($(if ($workshop.clientOnly) { 'Client only' } else { 'Server + client' }))
+    [void]$it.SubItems.Add($(if ($subscribed) { 'Subscribed' } else { 'Not subscribed' }))
+    [void]$it.SubItems.Add([string]$workshop.description)
+    $it.Tag = $workshop
+    if ($subscribed) { $it.ForeColor = $green }
+    [void]$workshopList.Items.Add($it)
   }
   foreach ($beta in $script:betas) {
     $installed = $script:pal -and (Test-BetaInstalled $script:pal $beta)
@@ -603,6 +677,22 @@ Continue with the bridge installation?
 })
 
 $refresh.Add_Click({ Refresh-Everything })
+
+$openWorkshopItem = {
+  if ($workshopList.SelectedItems.Count -ne 1) {
+    Say 'Select a Workshop add-on first.' 'err'
+    return
+  }
+  $workshop = $workshopList.SelectedItems[0].Tag
+  try {
+    Open-WorkshopItem $workshop
+    Say "Opened $($workshop.name) in Steam. Subscribe there, then enable it in Palworld's Mod Management screen." 'ok'
+  } catch {
+    Say "$_" 'err'
+  }
+}
+$openWorkshop.Add_Click($openWorkshopItem)
+$workshopList.Add_DoubleClick($openWorkshopItem)
 
 $openDir.Add_Click({
   if (-not $script:pal) { Say 'Pick your Palworld folder first.' 'err'; return }
