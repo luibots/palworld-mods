@@ -163,6 +163,44 @@ function Get-UE4SSRoot([string]$pal) {
   return $null
 }
 
+function Enable-Ue4ssWorkshopPackage([string]$pal) {
+  $common = Split-Path $pal -Parent
+  $steamApps = Split-Path $common -Parent
+  if ((Split-Path $common -Leaf) -ne 'common' -or
+      (Split-Path $steamApps -Leaf) -ne 'steamapps') {
+    return
+  }
+  $workshopItem = Join-Path $steamApps 'workshop\content\1623730\3625223587'
+  if (-not (Test-Path -LiteralPath (Join-Path $workshopItem 'Info.json'))) {
+    return
+  }
+
+  $modsDir = Join-Path $pal 'Mods'
+  $settingsPath = Join-Path $modsDir 'PalModSettings.ini'
+  New-Item -ItemType Directory -Force $modsDir | Out-Null
+  $lines = if (Test-Path -LiteralPath $settingsPath) {
+    @(Get-Content -LiteralPath $settingsPath)
+  } else {
+    @('[PalModSettings]')
+  }
+  if (-not ($lines | Where-Object { $_ -match '^\s*\[PalModSettings\]\s*$' })) {
+    $lines = @('[PalModSettings]') + $lines
+  }
+  if ($lines | Where-Object { $_ -match '^\s*bGlobalEnableMod\s*=' }) {
+    $lines = @($lines | ForEach-Object {
+      if ($_ -match '^\s*bGlobalEnableMod\s*=') { 'bGlobalEnableMod=True' } else { $_ }
+    })
+  } else {
+    $lines += 'bGlobalEnableMod=True'
+  }
+  if (-not ($lines | Where-Object {
+    $_ -match '^\s*ActiveModList\s*=\s*UE4SSExperimentalPW\s*$'
+  })) {
+    $lines += 'ActiveModList=UE4SSExperimentalPW'
+  }
+  [IO.File]::WriteAllLines($settingsPath, $lines, [Text.UTF8Encoding]::new($false))
+}
+
 function Get-Ue4ssDestination([string]$pal, $entry) {
   $ue4ss = Get-UE4SSRoot $pal
   if (-not $ue4ss) { return $null }
@@ -188,6 +226,7 @@ Subscribe in Steam Workshop, enable it in Palworld's Mod Manager, launch once,
 close Palworld, and then run this installer again.
 "@
   }
+  Enable-Ue4ssWorkshopPackage $pal
 
   $stage = Join-Path $env:TEMP ("ayeguild-ue4ss-" + [guid]::NewGuid().ToString('N'))
   $destination = Get-Ue4ssDestination $pal $entry
