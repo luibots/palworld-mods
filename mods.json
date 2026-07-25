@@ -100,7 +100,7 @@
                      "name":  "Pal Companion AI Overlay",
                      "description":  "In-game F2 AI Paldeck plus an instant F3 verified-vendor directory with map and guild actions.",
                      "warning":  "LUIS ONLY. Private pilot with substantial setup; this installs only the UE4SS bridge.",
-                     "version":  "0.2.0-beta",
+                     "version":  "0.2.1-beta",
                      "installType":  "ue4ss-lua",
                      "modFolder":  "PalCompanionUI",
                      "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-local-llm-companion/master/mods/PalCompanionUI",
@@ -125,7 +125,7 @@
                                    },
                                    {
                                        "path":  "scripts/main.lua",
-                                       "sha256":  "33f5e6f61c292fcc5a092bd2868e94239d795260346a597b50f9d6d51605948a"
+                                       "sha256":  "90ffcb0737a3a891c78963204931d7fdfdc1141e7a23e5235d2168b1caf9cc3c"
                                    }
                                ]
                  }
