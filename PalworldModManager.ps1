@@ -207,11 +207,26 @@ function Get-Ue4ssDestination([string]$pal, $entry) {
   Join-Path $ue4ss ("Mods\{0}" -f $entry.modFolder)
 }
 
-function Test-BetaInstalled([string]$pal, $beta) {
+function Test-BetaPresent([string]$pal, $beta) {
   if ($beta.installType -ne 'ue4ss-lua') { return $false }
   $destination = Get-Ue4ssDestination $pal $beta
   if (-not $destination) { return $false }
   Test-Path -LiteralPath (Join-Path $destination 'scripts\main.lua')
+}
+
+function Test-BetaInstalled([string]$pal, $beta) {
+  if (-not (Test-BetaPresent $pal $beta)) { return $false }
+  $destination = Get-Ue4ssDestination $pal $beta
+  foreach ($file in @($beta.files)) {
+    $relative = ([string]$file.path) -replace '/', '\'
+    $installedFile = Join-Path $destination $relative
+    if (-not (Test-Path -LiteralPath $installedFile)) { return $false }
+    if ($file.sha256) {
+      $actual = (Get-FileHash -LiteralPath $installedFile -Algorithm SHA256).Hash.ToLower()
+      if ($actual -ne ([string]$file.sha256).ToLower()) { return $false }
+    }
+  }
+  return $true
 }
 
 function Install-Ue4ssMod([string]$pal, [string]$base, $entry) {
@@ -365,7 +380,13 @@ if ($SelfTest) {
       }
     }
     foreach ($beta in @($mf.Manifest.beta)) {
-      $state = if ($pal -and (Test-BetaInstalled $pal $beta)) { 'BRIDGE INSTALLED' } else { 'not installed' }
+      $state = if ($pal -and (Test-BetaInstalled $pal $beta)) {
+        'BRIDGE INSTALLED'
+      } elseif ($pal -and (Test-BetaPresent $pal $beta)) {
+        'UPDATE AVAILABLE'
+      } else {
+        'not installed'
+      }
       Write-Host ("  [beta] {0} [{1}] - private pilot; guided setup required" -f $beta.name, $state)
     }
   } catch { Write-Host "  [FAIL] $_"; $ok = $false }
@@ -622,14 +643,15 @@ function Refresh-Everything {
   }
   foreach ($beta in $script:betas) {
     $installed = $script:pal -and (Test-BetaInstalled $script:pal $beta)
+    $present = $script:pal -and (Test-BetaPresent $script:pal $beta)
     $it = New-Object System.Windows.Forms.ListViewItem($beta.name)
     [void]$it.SubItems.Add($(if ($beta.version) { "v$($beta.version)" } else { '-' }))
     [void]$it.SubItems.Add('UE4SS bridge only')
-    [void]$it.SubItems.Add($(if ($installed) { 'Bridge installed' } else { 'Not installed' }))
+    [void]$it.SubItems.Add($(if ($installed) { 'Bridge installed' } elseif ($present) { 'Update available' } else { 'Not installed' }))
     [void]$it.SubItems.Add([string]$beta.warning)
-    $it.Checked = [bool]$installed
+    $it.Checked = [bool]($installed -or $present)
     $it.Tag = $beta
-    if ($installed) { $it.ForeColor = $green } else { $it.ForeColor = $red }
+    if ($installed) { $it.ForeColor = $green } elseif ($present) { $it.ForeColor = $amber } else { $it.ForeColor = $red }
     [void]$betaList.Items.Add($it)
   }
   if (-not $script:pal) { return }
