@@ -3,22 +3,29 @@ local UEHelpers = require("UEHelpers")
 local MOD_NAME = "AyeGuildMiniMap"
 local MAP_PACKAGE = "/Game/Pal/Texture/UI/Map/T_WorldMap"
 local MAP_ASSET = "/Game/Pal/Texture/UI/Map/T_WorldMap.T_WorldMap"
+local PLAYER_ICON_PACKAGE = "/Game/Pal/Texture/UI/InGame/T_icon_map_player"
+local PLAYER_ICON_ASSET = "/Game/Pal/Texture/UI/InGame/T_icon_map_player.T_icon_map_player"
 local VIEW_SIZE = 260.0
-local MAP_SCALE = 6.0
-local MAP_RENDER_SIZE = VIEW_SIZE * MAP_SCALE
+local VISIBLE_MAP_SPAN = 80.0
 local MAP_MARGIN = 24.0
-local MARKER_OUTER_SIZE = 18.0
-local MARKER_INNER_SIZE = 10.0
+local MARKER_SIZE = 30.0
 local MAP_MIN = -1000.0
 local MAP_MAX = 1000.0
+local MAP_COORDINATE_SPAN = MAP_MAX - MAP_MIN
+local MAP_SCALE = MAP_COORDINATE_SPAN / VISIBLE_MAP_SPAN
+local MAP_RENDER_SIZE = VIEW_SIZE * MAP_SCALE
 
 local root_widget = nil
 local map_slot = nil
+local marker_widget = nil
+local marker_slot = nil
 local coordinate_text = nil
 local visible = true
 local update_queued = false
 local retry_after = 0
 local sample_count = 0
+local camera_map_x = nil
+local camera_map_y = nil
 
 local function log(message)
     print(string.format("[%s] %s\n", MOD_NAME, message))
@@ -59,11 +66,11 @@ local function create_object(class_path, outer)
     return object
 end
 
-local function load_map_texture()
-    LoadAsset(MAP_PACKAGE)
-    local texture = StaticFindObject(MAP_ASSET)
+local function load_texture(package_path, asset_path)
+    LoadAsset(package_path)
+    local texture = StaticFindObject(asset_path)
     if not valid(texture) then
-        error("Could not load Palworld world-map texture")
+        error("Could not load Palworld texture: " .. asset_path)
     end
     return texture
 end
@@ -84,14 +91,6 @@ local function add_fixed_widget(canvas, widget, left, top, width, height)
     return slot
 end
 
-local function add_centered_widget(canvas, widget, width, height)
-    local center_x = -MAP_MARGIN - (VIEW_SIZE / 2.0)
-    local center_y = MAP_MARGIN + (VIEW_SIZE / 2.0)
-    local slot = add_fixed_widget(canvas, widget, center_x, center_y, width, height)
-    slot:SetAlignment({X = 0.5, Y = 0.5})
-    return slot
-end
-
 local function build_minimap()
     local controller = UEHelpers:GetPlayerController()
     if not valid(controller) then
@@ -106,8 +105,7 @@ local function build_minimap()
     local viewport = create_object("/Script/UMG.Border", widget_tree)
     local map_canvas = create_object("/Script/UMG.CanvasPanel", widget_tree)
     local map_image = create_object("/Script/UMG.Image", widget_tree)
-    local marker_outer = create_object("/Script/UMG.Border", widget_tree)
-    local marker_inner = create_object("/Script/UMG.Border", widget_tree)
+    local next_marker_widget = create_object("/Script/UMG.Image", widget_tree)
     local next_coordinate_text = create_object("/Script/UMG.TextBlock", widget_tree)
 
     next_root.WidgetTree = widget_tree
@@ -125,7 +123,7 @@ local function build_minimap()
         VIEW_SIZE
     )
 
-    map_image:SetBrushFromTexture(load_map_texture(), false)
+    map_image:SetBrushFromTexture(load_texture(MAP_PACKAGE, MAP_ASSET), false)
     map_image:SetRenderOpacity(0.96)
     local next_map_slot = map_canvas:AddChildToCanvas(map_image)
     next_map_slot:SetAnchors({
@@ -139,10 +137,19 @@ local function build_minimap()
         Bottom = MAP_RENDER_SIZE
     })
 
-    marker_outer:SetBrushColor({R = 0.02, G = 0.025, B = 0.03, A = 1.0})
-    add_centered_widget(root_canvas, marker_outer, MARKER_OUTER_SIZE, MARKER_OUTER_SIZE)
-    marker_inner:SetBrushColor({R = 1.0, G = 0.72, B = 0.08, A = 1.0})
-    add_centered_widget(root_canvas, marker_inner, MARKER_INNER_SIZE, MARKER_INNER_SIZE)
+    next_marker_widget:SetBrushFromTexture(
+        load_texture(PLAYER_ICON_PACKAGE, PLAYER_ICON_ASSET),
+        false
+    )
+    local next_marker_slot = add_fixed_widget(
+        root_canvas,
+        next_marker_widget,
+        -MAP_MARGIN - (VIEW_SIZE / 2.0),
+        MAP_MARGIN + (VIEW_SIZE / 2.0),
+        MARKER_SIZE,
+        MARKER_SIZE
+    )
+    next_marker_slot:SetAlignment({X = 0.5, Y = 0.5})
 
     next_coordinate_text:SetText(FText("POSITION  X 0  Y 0"))
     next_coordinate_text:SetShadowOffset({X = 1.5, Y = 1.5})
@@ -161,14 +168,16 @@ local function build_minimap()
 
     root_widget = next_root
     map_slot = next_map_slot
+    marker_widget = next_marker_widget
+    marker_slot = next_marker_slot
     coordinate_text = next_coordinate_text
-    log("Tracking minimap created. The player marker remains centered while the map moves.")
+    log("GPS minimap created. The player marker moves and the local map follows.")
 end
 
 local function get_player_location()
     local controller = UEHelpers:GetPlayerController()
     if not valid(controller) then
-        return nil
+        return nil, nil
     end
     local pawn = controller.Pawn
     if not valid(pawn) then
@@ -180,15 +189,15 @@ local function get_player_location()
         end
     end
     if not valid(pawn) then
-        return nil
+        return nil, nil
     end
     local ok, location = pcall(function()
         return pawn:K2_GetActorLocation()
     end)
     if not ok then
-        return nil
+        return nil, nil
     end
-    return location
+    return location, pawn
 end
 
 local function world_to_map(location)
@@ -198,22 +207,44 @@ local function world_to_map(location)
 end
 
 local function update_minimap()
-    if not valid(root_widget) or not valid(map_slot) or not valid(coordinate_text) then
+    if not valid(root_widget)
+        or not valid(map_slot)
+        or not valid(marker_widget)
+        or not valid(marker_slot)
+        or not valid(coordinate_text)
+    then
         root_widget = nil
         map_slot = nil
+        marker_widget = nil
+        marker_slot = nil
         coordinate_text = nil
         build_minimap()
     end
 
-    local location = get_player_location()
+    local location, pawn = get_player_location()
     if not location then
         return
     end
 
     local map_x, map_y = world_to_map(location)
-    local span = MAP_MAX - MAP_MIN
-    local normalized_x = clamp((map_x - MAP_MIN) / span, 0.0, 1.0)
-    local normalized_y = clamp((map_y - MAP_MIN) / span, 0.0, 1.0)
+    if not camera_map_x or not camera_map_y then
+        camera_map_x = map_x
+        camera_map_y = map_y
+    end
+
+    local delta_x = map_x - camera_map_x
+    local delta_y = map_y - camera_map_y
+    local snap_distance = VISIBLE_MAP_SPAN * 0.42
+    if math.abs(delta_x) > snap_distance or math.abs(delta_y) > snap_distance then
+        camera_map_x = map_x
+        camera_map_y = map_y
+    else
+        camera_map_x = camera_map_x + (delta_x * 0.08)
+        camera_map_y = camera_map_y + (delta_y * 0.08)
+    end
+
+    local normalized_x = clamp((camera_map_x - MAP_MIN) / MAP_COORDINATE_SPAN, 0.0, 1.0)
+    local normalized_y = clamp((camera_map_y - MAP_MIN) / MAP_COORDINATE_SPAN, 0.0, 1.0)
     local texture_x = normalized_x * MAP_RENDER_SIZE
     local texture_y = (1.0 - normalized_y) * MAP_RENDER_SIZE
 
@@ -223,6 +254,23 @@ local function update_minimap()
         Right = MAP_RENDER_SIZE,
         Bottom = MAP_RENDER_SIZE
     })
+
+    local pixels_per_map_unit = VIEW_SIZE / VISIBLE_MAP_SPAN
+    local marker_x = (VIEW_SIZE / 2.0) + ((map_x - camera_map_x) * pixels_per_map_unit)
+    local marker_y = (VIEW_SIZE / 2.0) - ((map_y - camera_map_y) * pixels_per_map_unit)
+    marker_slot:SetOffsets({
+        Left = -MAP_MARGIN - VIEW_SIZE + marker_x,
+        Top = MAP_MARGIN + marker_y,
+        Right = MARKER_SIZE,
+        Bottom = MARKER_SIZE
+    })
+
+    local rotation_ok, rotation = pcall(function()
+        return pawn:K2_GetActorRotation()
+    end)
+    if rotation_ok and rotation then
+        marker_widget:SetRenderTransformAngle(rotation.Yaw)
+    end
     coordinate_text:SetText(FText(string.format(
         "POSITION  X %d  Y %d",
         math.floor(map_x + 0.5),

@@ -57,12 +57,12 @@
                  {
                      "id":  "ayeguild-minimap",
                      "name":  "AyeGuild MiniMap",
-                     "description":  "Our player-centered in-game minimap with a live scrolling map and current coordinates.",
+                     "description":  "Our high-zoom GPS-style minimap with a moving native player marker, heading, and current coordinates.",
                      "installType":  "ue4ss-lua",
                      "modFolder":  "AyeGuildMiniMap",
                      "sourceDir":  "mods/ayeguild-minimap/AyeGuildMiniMap",
                      "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-mods/master/mods/ayeguild-minimap/AyeGuildMiniMap",
-                     "version":  "0.2.0-beta",
+                     "version":  "0.3.0-beta",
                      "category":  "client-ui",
                      "gameVersion":  "v1.0.1.100619",
                      "verified":  "2026-07-24",
@@ -77,7 +77,7 @@
                      "conflicts":  [
 
                                    ],
-                     "notes":  "Client only. The player marker stays centered while the map tracks movement. Press F6 to hide or show it. Uses Palworld's own map texture and never contacts the server.",
+                     "notes":  "Client only. The player marker visibly moves while a high-zoom local map follows and recenters. Press F6 to hide or show it. Uses Palworld's own map assets and never contacts the server.",
                      "files":  [
                                    {
                                        "path":  "enabled.txt",
@@ -85,11 +85,11 @@
                                    },
                                    {
                                        "path":  "README.md",
-                                       "sha256":  "4fd49d58f89190a066425a676ed4cac28a36224bc552fa64e29716f32e90355e"
+                                       "sha256":  "550d5733c5abb68dbf8187d93baa17cc7f9f467816ca5b2baa23612b5e19f02a"
                                    },
                                    {
                                        "path":  "scripts/main.lua",
-                                       "sha256":  "4da1e6652425cd3b9d61729a6808ebe5ba86bd0c709346c6dbd40b34ecdce2a9"
+                                       "sha256":  "28027017127ce632f32739261b9649632bee7431e27f0aa0ce21054005afa19f"
                                    }
                                ]
                  }
