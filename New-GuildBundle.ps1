@@ -98,9 +98,10 @@ telemetry and does not install another game mod.
 
 ## AyeGuild MiniMap
 
-Our client-only minimap uses Palworld's own world-map texture and shows your live
-position plus numeric coordinates. It updates twice per second, does not contact the
-server, and can be hidden or shown with **F6**. UE4SS Experimental is required.
+Our client-only minimap keeps your marker centered in a high-zoom local map window
+and shows numeric coordinates. It skips rendering work while you are stationary,
+does not contact the server, and can be hidden or shown with **F6**. UE4SS
+Experimental is required.
 
 ## Private Beta
 

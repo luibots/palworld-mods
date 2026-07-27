@@ -6,11 +6,13 @@ local MAP_ASSET = "/Game/Pal/Texture/UI/Map/T_WorldMap.T_WorldMap"
 local PLAYER_ICON_PACKAGE = "/Game/Pal/Texture/UI/InGame/T_icon_map_player"
 local PLAYER_ICON_ASSET = "/Game/Pal/Texture/UI/InGame/T_icon_map_player.T_icon_map_player"
 local VIEW_SIZE = 220.0
-local VISIBLE_MAP_SPAN = 80.0
+local VISIBLE_MAP_SPAN = 96.0
 local MAP_MARGIN = 24.0
 local MAP_TOP = 68.0
 local MARKER_SIZE = 24.0
 local COORDINATE_HEIGHT = 22.0
+local MOVEMENT_EPSILON = 8.0
+local ROTATION_EPSILON = 0.5
 local MAP_MIN = -1000.0
 local MAP_MAX = 1000.0
 local MAP_COORDINATE_SPAN = MAP_MAX - MAP_MIN
@@ -22,12 +24,14 @@ local map_slot = nil
 local marker_widget = nil
 local marker_slot = nil
 local coordinate_text = nil
-local visible = false
+local visible = true
 local update_queued = false
 local retry_after = 0
-local sample_count = 0
-local camera_map_x = nil
-local camera_map_y = nil
+local last_world_x = nil
+local last_world_y = nil
+local last_coordinate_x = nil
+local last_coordinate_y = nil
+local last_yaw = nil
 
 local function log(message)
     print(string.format("[%s] %s\n", MOD_NAME, message))
@@ -77,13 +81,13 @@ local function load_texture(package_path, asset_path)
     return texture
 end
 
-local function add_fixed_widget(canvas, widget, left, top, width, height)
+local function add_top_right_widget(canvas, widget, left, top, width, height)
     local slot = canvas:AddChildToCanvas(widget)
     slot:SetAnchors({
-        Minimum = {X = 0.0, Y = 0.0},
-        Maximum = {X = 0.0, Y = 0.0}
+        Minimum = {X = 1.0, Y = 0.0},
+        Maximum = {X = 1.0, Y = 0.0}
     })
-    slot:SetAlignment({X = 0.0, Y = 0.0})
+    slot:SetAlignment({X = 1.0, Y = 0.0})
     slot:SetOffsets({
         Left = left,
         Top = top,
@@ -123,10 +127,10 @@ local function build_minimap()
     viewport:SetBrushColor({R = 0.025, G = 0.035, B = 0.05, A = 0.94})
     viewport:SetClipping(1)
     viewport:AddChild(map_canvas)
-    add_fixed_widget(
+    add_top_right_widget(
         root_canvas,
         viewport,
-        MAP_MARGIN,
+        -MAP_MARGIN,
         MAP_TOP,
         VIEW_SIZE,
         VIEW_SIZE
@@ -150,10 +154,10 @@ local function build_minimap()
         load_texture(PLAYER_ICON_PACKAGE, PLAYER_ICON_ASSET),
         false
     )
-    local next_marker_slot = add_fixed_widget(
+    local next_marker_slot = add_top_right_widget(
         root_canvas,
         next_marker_widget,
-        MAP_MARGIN + (VIEW_SIZE / 2.0),
+        -MAP_MARGIN - (VIEW_SIZE / 2.0),
         MAP_TOP + (VIEW_SIZE / 2.0),
         MARKER_SIZE,
         MARKER_SIZE
@@ -167,10 +171,10 @@ local function build_minimap()
     next_coordinate_text:SetShadowOffset({X = 1.0, Y = 1.0})
     next_coordinate_text:SetShadowColorAndOpacity({R = 0.0, G = 0.0, B = 0.0, A = 1.0})
     coordinate_panel:AddChild(next_coordinate_text)
-    add_fixed_widget(
+    add_top_right_widget(
         root_canvas,
         coordinate_panel,
-        MAP_MARGIN + 8.0,
+        -MAP_MARGIN - 8.0,
         MAP_TOP + VIEW_SIZE - COORDINATE_HEIGHT - 6.0,
         VIEW_SIZE - 16.0,
         COORDINATE_HEIGHT
@@ -184,7 +188,12 @@ local function build_minimap()
     marker_widget = next_marker_widget
     marker_slot = next_marker_slot
     coordinate_text = next_coordinate_text
-    log("GPS minimap created. The player marker moves and the local map follows.")
+    last_world_x = nil
+    last_world_y = nil
+    last_coordinate_x = nil
+    last_coordinate_y = nil
+    last_yaw = nil
+    log("Player-centered minimap created.")
 end
 
 local function get_player_location()
@@ -240,60 +249,49 @@ local function update_minimap()
     end
 
     local map_x, map_y = world_to_map(location)
-    if not camera_map_x or not camera_map_y then
-        camera_map_x = map_x
-        camera_map_y = map_y
+    local moved = not last_world_x
+        or math.abs(location.X - last_world_x) >= MOVEMENT_EPSILON
+        or math.abs(location.Y - last_world_y) >= MOVEMENT_EPSILON
+    if moved then
+        local normalized_x = clamp((map_x - MAP_MIN) / MAP_COORDINATE_SPAN, 0.0, 1.0)
+        local normalized_y = clamp((map_y - MAP_MIN) / MAP_COORDINATE_SPAN, 0.0, 1.0)
+        local texture_x = normalized_x * MAP_RENDER_SIZE
+        local texture_y = (1.0 - normalized_y) * MAP_RENDER_SIZE
+
+        -- The player remains fixed at the center while the clipped atlas moves
+        -- below it. This is the critical difference between a minimap and a
+        -- full-world map with a roaming marker.
+        map_slot:SetOffsets({
+            Left = (VIEW_SIZE / 2.0) - texture_x,
+            Top = (VIEW_SIZE / 2.0) - texture_y,
+            Right = MAP_RENDER_SIZE,
+            Bottom = MAP_RENDER_SIZE
+        })
+        last_world_x = location.X
+        last_world_y = location.Y
     end
-
-    local delta_x = map_x - camera_map_x
-    local delta_y = map_y - camera_map_y
-    local snap_distance = VISIBLE_MAP_SPAN * 0.42
-    if math.abs(delta_x) > snap_distance or math.abs(delta_y) > snap_distance then
-        camera_map_x = map_x
-        camera_map_y = map_y
-    else
-        camera_map_x = camera_map_x + (delta_x * 0.08)
-        camera_map_y = camera_map_y + (delta_y * 0.08)
-    end
-
-    local normalized_x = clamp((camera_map_x - MAP_MIN) / MAP_COORDINATE_SPAN, 0.0, 1.0)
-    local normalized_y = clamp((camera_map_y - MAP_MIN) / MAP_COORDINATE_SPAN, 0.0, 1.0)
-    local texture_x = normalized_x * MAP_RENDER_SIZE
-    local texture_y = (1.0 - normalized_y) * MAP_RENDER_SIZE
-
-    map_slot:SetOffsets({
-        Left = (VIEW_SIZE / 2.0) - texture_x,
-        Top = (VIEW_SIZE / 2.0) - texture_y,
-        Right = MAP_RENDER_SIZE,
-        Bottom = MAP_RENDER_SIZE
-    })
-
-    local pixels_per_map_unit = VIEW_SIZE / VISIBLE_MAP_SPAN
-    local marker_x = (VIEW_SIZE / 2.0) + ((map_x - camera_map_x) * pixels_per_map_unit)
-    local marker_y = (VIEW_SIZE / 2.0) - ((map_y - camera_map_y) * pixels_per_map_unit)
-    marker_slot:SetOffsets({
-        Left = MAP_MARGIN + marker_x,
-        Top = MAP_TOP + marker_y,
-        Right = MARKER_SIZE,
-        Bottom = MARKER_SIZE
-    })
 
     local rotation_ok, rotation = pcall(function()
         return pawn:K2_GetActorRotation()
     end)
-    if rotation_ok and rotation then
+    if rotation_ok
+        and rotation
+        and (not last_yaw or math.abs(rotation.Yaw - last_yaw) >= ROTATION_EPSILON)
+    then
         marker_widget:SetRenderTransformAngle(rotation.Yaw)
+        last_yaw = rotation.Yaw
     end
-    coordinate_text:SetText(FText(string.format(
-        "%d, %d",
-        math.floor(map_x + 0.5),
-        math.floor(map_y + 0.5)
-    )))
 
-    sample_count = sample_count + 1
-    if sample_count >= 20 then
-        sample_count = 0
-        log(string.format("Tracking position X %.1f Y %.1f", map_x, map_y))
+    local coordinate_x = math.floor(map_x + 0.5)
+    local coordinate_y = math.floor(map_y + 0.5)
+    if coordinate_x ~= last_coordinate_x or coordinate_y ~= last_coordinate_y then
+        coordinate_text:SetText(FText(string.format(
+            "%d, %d",
+            coordinate_x,
+            coordinate_y
+        )))
+        last_coordinate_x = coordinate_x
+        last_coordinate_y = coordinate_y
     end
 end
 
@@ -309,7 +307,7 @@ end
 
 RegisterKeyBind(Key.F6, toggle_minimap)
 
-LoopAsync(250, function()
+LoopAsync(100, function()
     if update_queued then
         return false
     end
@@ -329,4 +327,4 @@ LoopAsync(250, function()
     return false
 end)
 
-log("Prototype loaded hidden. Press F6 to show it.")
+log("Loaded visible. Press F6 to hide or show it.")

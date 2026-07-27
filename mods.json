@@ -56,16 +56,16 @@
                  },
                  {
                      "id":  "ayeguild-minimap",
-                     "name":  "AyeGuild MiniMap (Prototype)",
-                     "description":  "Retired Lua prototype retained only for uninstall and comparison while the Blueprint render-target version is built.",
+                     "name":  "AyeGuild MiniMap (Beta)",
+                     "description":  "Player-centered local map with a rotating heading marker and live coordinates.",
                      "installType":  "ue4ss-lua",
                      "modFolder":  "AyeGuildMiniMap",
                      "sourceDir":  "mods/ayeguild-minimap/AyeGuildMiniMap",
                      "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-mods/master/mods/ayeguild-minimap/AyeGuildMiniMap",
-                     "version":  "0.4.0-beta",
+                     "version":  "0.5.0-beta",
                      "category":  "client-ui",
                      "gameVersion":  "v1.0.1.100619",
-                     "verified":  "2026-07-24",
+                     "verified":  "2026-07-27",
                      "enabled":  true,
                      "author":  "Luibot",
                      "team":  "AyeGuild",
@@ -77,7 +77,7 @@
                      "conflicts":  [
 
                                    ],
-                     "notes":  "NOT APPROVED FOR GUILD RELEASE. Hidden by default. This flat-texture Lua prototype is being replaced by a proper Blueprint scene-capture minimap.",
+                     "notes":  "BETA. Client-only and hidden from recommended installs. Uses a clipped native map texture; a scene-capture Blueprint remains planned for terrain-detail mode.",
                      "files":  [
                                    {
                                        "path":  "enabled.txt",
@@ -85,11 +85,11 @@
                                    },
                                    {
                                        "path":  "README.md",
-                                       "sha256":  "3a5e6f82e9217772f2f965f9fe811ae1582b4da73e413067670af51f35e5e513"
+                                       "sha256":  "73a9faaa13d36d7870161b04b34c3288a659e96e1caf2ef03d993571d6726802"
                                    },
                                    {
                                        "path":  "scripts/main.lua",
-                                       "sha256":  "14ea819eb0a57ff347e613696ce56adb1d576fe09b884b9360a738d106b62fe5"
+                                       "sha256":  "989e4c2d0016d006e1a069f9892f814aa11adfc37c02995373db52172a196d74"
                                    }
                                ]
                  }

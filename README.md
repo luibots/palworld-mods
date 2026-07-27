@@ -64,7 +64,7 @@ this warning and requires confirmation before installing the bridge.
 |---|---|---|
 | **10 Bases Per Guild** | Raises the base-camp limit to 10 at every base level. Worker limits stay vanilla. | Yes |
 | **FOV Slider: Up To 150** | Expands the client camera slider to 150. | No |
-| **AyeGuild MiniMap (beta)** | Shows our lightweight world map, live position marker, and coordinates. | No |
+| **AyeGuild MiniMap (beta)** | Shows a player-centered local map, heading marker, and coordinates. | No |
 
 ---
 
