@@ -1,7 +1,7 @@
 {
     "schema":  1,
     "name":  "Guild Mod Set",
-    "updated":  "2026-07-25",
+    "updated":  "2026-07-27",
     "mods":  [
                  {
                      "id":  "basefix10",
@@ -98,9 +98,9 @@
                  {
                      "id":  "pal-companion-ui",
                      "name":  "Pal Companion AI Overlay",
-                     "description":  "In-game F2 AI Paldeck plus an instant F3 verified-vendor directory with map and guild actions.",
+                     "description":  "In-game F2 AI Paldeck, F3 verified-vendor directory, and guarded F4 AI Storage Router for explicitly labeled chests.",
                      "warning":  "LUIS ONLY. Private pilot with substantial setup; this installs only the UE4SS bridge.",
-                     "version":  "0.2.2-beta",
+                     "version":  "0.3.0-beta",
                      "installType":  "ue4ss-lua",
                      "modFolder":  "PalCompanionUI",
                      "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-local-llm-companion/master/mods/PalCompanionUI",
@@ -121,16 +121,16 @@
                                    },
                                    {
                                        "path":  "README.md",
-                                       "sha256":  "d6ef257d547530241f683557c97b3581ebfa39857cf8930ba64999b4ea6da24e"
+                                       "sha256":  "94c2eb8b37f2cbdcc12683c221fe2c6658bff75d727298d31c6adbbf508cf9c6"
                                    },
                                    {
                                        "path":  "scripts/main.lua",
-                                       "sha256":  "338f04636d5c2ed6592c0dfd0d2d5654db0b6103ba144fd57ef1a4c88bec2a26"
+                                       "sha256":  "443c0e5c23e72236d4ed647e02e291a026baefaf0c7df927c873bb6c2a20941a"
                                    }
                                ]
                  }
              ],
-    "manifestVersion":  "1.4.0",
+    "manifestVersion":  "1.5.0",
     "authors":  [
                     "Luibot",
                     "AyeGuild"
