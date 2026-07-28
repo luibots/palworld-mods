@@ -4,6 +4,8 @@
 
 **You do not need to know anything technical. Just follow the two steps below.**
 
+![AyeGuild Palworld Mod Manager](docs/screenshots/mod-manager.png)
+
 ---
 
 ## How to install the mods
@@ -51,10 +53,11 @@ recommended guild setup.
 
 Selecting it installs only the verified UE4SS bridge. `F2` opens the AI companion;
 `F3` opens the instant verified-vendor directory with native map markers and a
-sanitized guild Discord action. Substantial setup is still required: Steam Palworld,
-UE4SS Experimental, Python 3.11+, Ollama, the local chat and embedding models, indexed
-game data, and the companion API running on `127.0.0.1:8765`. The manager displays
-this warning and requires confirmation before installing the bridge.
+sanitized guild Discord action; `F4` opens the guarded AI Storage Router for labeled
+chests built by the current player. Substantial setup is still required: Steam
+Palworld, UE4SS Experimental, Python 3.11+, Ollama, the local chat and embedding
+models, indexed game data, and the companion API running on `127.0.0.1:8765`. The
+manager displays this warning and requires confirmation before installing the bridge.
 
 ---
 
