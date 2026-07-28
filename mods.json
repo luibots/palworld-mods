@@ -98,9 +98,9 @@
                  {
                      "id":  "pal-companion-ui",
                      "name":  "Pal Companion AI Overlay",
-                     "description":  "In-game F2 AI Paldeck, F3 verified-vendor directory, and guarded F4 AI Storage Router for explicitly labeled chests.",
+                     "description":  "In-game F2 AI Paldeck, F3 verified-vendor directory, and guarded F4 AI Storage Router restricted to labeled chests built by the current player.",
                      "warning":  "LUIS ONLY. Private pilot with substantial setup; this installs only the UE4SS bridge.",
-                     "version":  "0.3.0-beta",
+                     "version":  "0.3.1-beta",
                      "installType":  "ue4ss-lua",
                      "modFolder":  "PalCompanionUI",
                      "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-local-llm-companion/master/mods/PalCompanionUI",
@@ -121,16 +121,16 @@
                                    },
                                    {
                                        "path":  "README.md",
-                                       "sha256":  "94c2eb8b37f2cbdcc12683c221fe2c6658bff75d727298d31c6adbbf508cf9c6"
+                                       "sha256":  "54998265294f8bb5001c8dc823e7a2d07592c4746f015174b65aaedd26840708"
                                    },
                                    {
                                        "path":  "scripts/main.lua",
-                                       "sha256":  "443c0e5c23e72236d4ed647e02e291a026baefaf0c7df927c873bb6c2a20941a"
+                                       "sha256":  "4076be1a62f3d530d26c870c34356d936ccadada10f2133594c9abf7c1922e28"
                                    }
                                ]
                  }
              ],
-    "manifestVersion":  "1.5.0",
+    "manifestVersion":  "1.5.1",
     "authors":  [
                     "Luibot",
                     "AyeGuild"
