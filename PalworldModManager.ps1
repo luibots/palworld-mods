@@ -533,7 +533,7 @@ $list.Font = New-Object System.Drawing.Font('Segoe UI', 9)
 $approvedTab.Controls.Add($list)
 
 $betaWarning = New-Object System.Windows.Forms.Label
-$betaWarning.Text = 'PRIVATE PILOT: LUIS ONLY. Installing the bridge is not the full setup. UE4SS, Ollama, Python, indexed game data, and the local companion service are required.'
+$betaWarning.Text = 'PRIVATE PILOT: LOCAL PROFILE ONLY. Installing the bridge is not the full setup. UE4SS, Ollama, Python, indexed game data, and the local companion service are required.'
 $betaWarning.ForeColor = $red
 $betaWarning.Font = New-Object System.Drawing.Font('Segoe UI', 9, [System.Drawing.FontStyle]::Bold)
 $betaWarning.Location = New-Object System.Drawing.Point(8, 8)
@@ -710,7 +710,7 @@ $apply.Add_Click({
       $installed = Test-BetaInstalled $script:pal $beta
       if ($it.Checked -and -not $installed) {
         $warning = @"
-$($beta.name) is a private beta for Luis only.
+$($beta.name) is enabled by a local private pilot profile.
 
 This installs only the UE4SS in-game bridge. It does NOT install or configure Ollama,
 Python, game-data indexing, the local API, or web/live integrations. The feature may
