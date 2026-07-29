@@ -54,10 +54,13 @@ recommended guild setup.
 Selecting it installs only the verified UE4SS bridge. `F2` opens the AI companion;
 `F3` opens the instant verified-vendor directory with native map markers and a
 sanitized guild Discord action; `F4` opens the guarded AI Storage Router for labeled
-chests built by the current player. Substantial setup is still required: Steam
+chests built by the current player; `F5` opens self-only Private Admin Supplies when a
+permission-scoped PalDefender server endpoint is configured. F5 does not broadcast or
+queue a guild Discord message. Substantial setup is still required: Steam
 Palworld, UE4SS Experimental, Python 3.11+, Ollama, the local chat and embedding
-models, indexed game data, and the companion API running on `127.0.0.1:8765`. The
-manager displays this warning and requires confirmation before installing the bridge.
+models, indexed game data, the companion API running on `127.0.0.1:8765`, and
+PalDefender with a token limited to `REST.Items.Give` for item grants. The manager
+displays this warning and requires confirmation before installing the bridge.
 
 ---
 

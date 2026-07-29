@@ -98,9 +98,9 @@
                  {
                      "id":  "pal-companion-ui",
                      "name":  "Pal Companion AI Overlay",
-                     "description":  "In-game F2 AI Paldeck, F3 verified-vendor directory, and guarded F4 AI Storage Router restricted to labeled chests built by the current player.",
-                     "warning":  "LUIS ONLY. Private pilot with substantial setup; this installs only the UE4SS bridge.",
-                     "version":  "0.3.1-beta",
+                     "description":  "In-game F2 AI Paldeck, F3 verified-vendor directory, guarded F4 AI Storage Router, and F5 self-only Private Admin Supplies.",
+                     "warning":  "LUIS ONLY. Private pilot with substantial setup; this installs only the UE4SS bridge. F5 remains locked without a server-side PalDefender grant endpoint and a scoped private token.",
+                     "version":  "0.4.0-beta",
                      "installType":  "ue4ss-lua",
                      "modFolder":  "PalCompanionUI",
                      "sourceBase":  "https://raw.githubusercontent.com/luibots/palworld-local-llm-companion/master/mods/PalCompanionUI",
@@ -112,7 +112,8 @@
                                       "Python 3.11+",
                                       "Ollama with qwen2.5:3b and embeddinggemma",
                                       "Local indexed game data",
-                                      "Local companion API on 127.0.0.1:8765"
+                                      "Local companion API on 127.0.0.1:8765",
+                                      "PalDefender server endpoint with REST.Items.Give token for F5"
                                   ],
                      "files":  [
                                    {
@@ -121,11 +122,11 @@
                                    },
                                    {
                                        "path":  "README.md",
-                                       "sha256":  "54998265294f8bb5001c8dc823e7a2d07592c4746f015174b65aaedd26840708"
+                                       "sha256":  "64a139e16548dc73f43c76fa8f54ad488bfef1e0790b9da5fe454d0bf82d9d72"
                                    },
                                    {
                                        "path":  "scripts/main.lua",
-                                       "sha256":  "4076be1a62f3d530d26c870c34356d936ccadada10f2133594c9abf7c1922e28"
+                                       "sha256":  "ef518748d504d4df08953b0018b2064179f2543d96ce042e7d14cf1c327ee8f4"
                                    }
                                ]
                  }

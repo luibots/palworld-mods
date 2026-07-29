@@ -691,6 +691,8 @@ $($beta.name) is a private beta for Luis only.
 This installs only the UE4SS in-game bridge. It does NOT install or configure Ollama,
 Python, game-data indexing, the local API, or web/live integrations. The feature may
 break after a Palworld update and can affect game performance while AI models are loaded.
+F5 Private Admin Supplies also requires a server-side PalDefender endpoint and a private
+token limited to REST.Items.Give. The installer does not modify the dedicated server.
 
 Continue with the bridge installation?
 "@
@@ -707,7 +709,7 @@ Continue with the bridge installation?
         }
         Say "Installing private beta bridge: $($beta.name)..."
         Install-Beta $script:pal $beta
-        Say "$($beta.name) bridge installed. Press F2 for AI or F3 for vendors in game." 'ok'
+        Say "$($beta.name) bridge installed. F2 AI, F3 vendors, F4 storage, F5 private supplies." 'ok'
       } elseif (-not $it.Checked -and $installed) {
         Say "Removing private beta bridge: $($beta.name)..."
         Uninstall-Beta $script:pal $beta
