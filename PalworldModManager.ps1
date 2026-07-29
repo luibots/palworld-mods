@@ -52,6 +52,24 @@ function Get-Manifest {
   throw ("Could not download the mod list. Check your internet connection. Details: " + ($errs -join ' | '))
 }
 
+function Get-PrivateBetas {
+  $profiles = @(
+    (Join-Path $env:APPDATA 'com.luibots.palcommand\private-beta.json'),
+    (Join-Path $PSScriptRoot 'private-beta.json')
+  )
+  foreach ($profile in $profiles) {
+    if (-not (Test-Path -LiteralPath $profile)) { continue }
+    try {
+      $text = (Get-Content -LiteralPath $profile -Raw) -replace "^\xEF\xBB\xBF", ''
+      $payload = $text.TrimStart([char]0xFEFF, [char]0x200B) | ConvertFrom-Json
+      return @($payload.beta)
+    } catch {
+      throw "Private pilot profile is invalid: $($_.Exception.Message)"
+    }
+  }
+  return @()
+}
+
 # ---------------------------------------------------------------- game paths
 
 function Find-Palworld {
@@ -379,7 +397,7 @@ if ($SelfTest) {
         }
       }
     }
-    foreach ($beta in @($mf.Manifest.beta)) {
+    foreach ($beta in @(Get-PrivateBetas)) {
       $state = if ($pal -and (Test-BetaInstalled $pal $beta)) {
         'BRIDGE INSTALLED'
       } elseif ($pal -and (Test-BetaPresent $pal $beta)) {
@@ -499,7 +517,6 @@ $tabs.TabPages.Add($approvedTab)
 $betaTab = New-Object System.Windows.Forms.TabPage
 $betaTab.Text = 'BETA - PRIVATE PILOT'
 $betaTab.BackColor = [System.Drawing.Color]::White
-$tabs.TabPages.Add($betaTab)
 
 $list = New-Object System.Windows.Forms.ListView
 $list.Dock = 'Fill'
@@ -618,7 +635,14 @@ function Refresh-Everything {
     $mf = Get-Manifest
     $script:base = $mf.Base
     $script:mods = @($mf.Manifest.mods)
-    $script:betas = @($mf.Manifest.beta)
+    $script:betas = @(Get-PrivateBetas)
+    $hasPrivateBeta = $script:betas.Count -gt 0
+    if ($hasPrivateBeta -and -not $tabs.TabPages.Contains($betaTab)) {
+      $tabs.TabPages.Add($betaTab)
+    } elseif (-not $hasPrivateBeta -and $tabs.TabPages.Contains($betaTab)) {
+      $tabs.TabPages.Remove($betaTab)
+    }
+    $betaGuide.Visible = $hasPrivateBeta
     Say ("Loaded the guild mod list ({0} mod(s))." -f $script:mods.Count) 'ok'
     if ($script:betas.Count) {
       Say ("Loaded {0} private beta pilot(s). Beta setup is intentionally separate from approved mods." -f $script:betas.Count)
