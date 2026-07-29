@@ -716,7 +716,8 @@ This installs only the UE4SS in-game bridge. It does NOT install or configure Ol
 Python, game-data indexing, the local API, or web/live integrations. The feature may
 break after a Palworld update and can affect game performance while AI models are loaded.
 F5 Private Admin Supplies also requires a server-side PalDefender endpoint and a private
-token limited to REST.Items.Give. The installer does not modify the dedicated server.
+token limited to REST.Items.Give and REST.Progression.Give. The installer does not
+modify the dedicated server.
 
 Continue with the bridge installation?
 "@
